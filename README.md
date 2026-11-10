@@ -49,7 +49,8 @@
 │   ├── models/video_processor.py      # 推理与追踪逻辑
 │   ├── weights/                       # arrow.pt / pose.pt
 │   ├── outputs/                       # 标注视频产物（不入库）
-│   └── requirements.txt
+│   ├── requirements.txt               # 兼容区间，首次安装用
+│   └── requirements.lock.txt          # 精确版本，复现环境用
 ├── dev.py                    # 一键启动前后端 + 环境自检
 └── README.md
 ```
@@ -77,13 +78,27 @@
 ```bash
 # 后端依赖（建议用独立 conda / venv 环境）
 conda activate jisuanji_shijue      # 或自建环境
+
+# 方式 A：兼容区间（首次安装，允许日后小幅升级）
 pip install -i https://mirrors.aliyun.com/pypi/simple/ -r backend/requirements.txt
+
+# 方式 B：精确锁定（要复现完全相同的版本时用）
+pip install -i https://mirrors.aliyun.com/pypi/simple/ -r backend/requirements.lock.txt
 
 # 前端依赖
 cd frontend && pnpm install && cd ..
 ```
 
 `ultralytics` 会连带安装 torch，CPU 版约 200MB，首次安装需要几分钟。有 NVIDIA 显卡想用 GPU，先按 CUDA 版本单独装 torch 再装其余依赖。
+
+两个依赖文件二选一即可：
+
+| 文件 | 内容 | 适用场景 |
+| --- | --- | --- |
+| `requirements.txt` | 6 个顶层依赖的兼容区间 | 正常安装，允许依赖小幅升级 |
+| `requirements.lock.txt` | 55 项精确版本（含全部传递依赖） | 版本完全复现，排查"我这里能跑他那里不行" |
+
+`requirements.lock.txt` 在 Python 3.9.25 + Windows AMD64 + torch 2.8.0+cpu 下导出，并已用 `pip install --dry-run` 与 `pip check` 验证无冲突。它已剔除与本项目无关的包。若在 Linux 上只用 CPU，先单独装 `torch==2.8.0 torchvision==0.23.0`（`--index-url https://download.pytorch.org/whl/cpu`），否则会拉取数 GB 的 CUDA 运行时。
 
 ### 启动
 

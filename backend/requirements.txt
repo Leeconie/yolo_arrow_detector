@@ -20,9 +20,10 @@ ultralytics>=8.0.200,<9.0.0
 
 # ------------------------------------------------------------
 # 说明：
-# 1. 上面用的是兼容区间而非精确版本，因为本机未找到该项目的运行环境，
-#    无法用 pip freeze 提取。若需要可复现安装，请在能跑通的环境执行：
-#        pip freeze > requirements.lock.txt
+# 1. 上面用的是兼容区间而非精确版本，适合首次安装并允许日后小幅升级。
+#    需要完全复现版本时，改用同目录下的 requirements.lock.txt：
+#    55 项精确版本（含全部传递依赖），已在 Python 3.9.25 / Windows AMD64 /
+#    torch 2.8.0+cpu 下用 pip install --dry-run 与 pip check 验证通过。
 # 2. 若要启用 GPU 推理，torch 需按 CUDA 版本单独安装，例如：
 #        pip install torch torchvision --index-url https://download.pytorch.org/whl/cu118
 #    装完再装本文件其余依赖，避免被 PyPI 的 CPU 版覆盖。
