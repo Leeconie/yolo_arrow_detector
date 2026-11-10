@@ -1,0 +1,63 @@
+# Docker Compose生产环境配置
+# 用于生产环境部署
+
+version: '3.8'
+
+services:
+  # 前端应用服务
+  frontend:
+    build:
+      context: ../..
+      dockerfile: resources/docker/nginx/Dockerfile
+      args:
+        - NODE_ENV=production
+    container_name: aimeasurearchery-frontend-prod
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      - NGINX_PORT=80
+      - NGINX_SERVER_NAME=${DOMAIN:-_}
+      - STATIC_CACHE_EXPIRES=1y
+      # CDN配置：默认不使用CDN，所有资源都打包到构建产物中
+      # 如需使用CDN，请参考 resources/cdn/README.md
+      - USE_CDN=false
+    volumes:
+      # 挂载SSL证书（如需要HTTPS）
+      # - ./ssl:/etc/nginx/ssl:ro
+      # 挂载日志目录
+      - nginx-logs:/var/log/nginx
+    networks:
+      - frontend-network
+    restart: always
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost/health"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 10s
+    # 资源限制
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 1G
+        reservations:
+          cpus: '1.0'
+          memory: 512M
+    # 日志配置
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+# 网络配置
+networks:
+  frontend-network:
+    driver: bridge
+
+# 卷配置
+volumes:
+  nginx-logs:
+    driver: local

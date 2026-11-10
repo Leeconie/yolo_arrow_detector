@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" href="/favicon.ico" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Vite App</title>
+
+    <!-- 资源预加载配置 -->
+    <!-- DNS预解析：提前解析域名，减少DNS查询时间 -->
+    <link rel="dns-prefetch" href="//fonts.googleapis.com" />
+    <link rel="dns-prefetch" href="//cdn.example.com" />
+
+    <!-- 关键资源预加载：CSS样式文件（首屏渲染必需） -->
+    <!-- 注意：Vite会自动处理CSS，这里仅作为示例，实际CSS会通过main.ts导入 -->
+    <!-- <link rel="preload" href="/src/assets/styles/index.css" as="style"> -->
+
+    <!-- 非关键资源预取：路由组件（按需加载，提前预取） -->
+    <!-- 注意：Vite的代码分割会自动处理路由懒加载，这里仅作为示例 -->
+    <!-- 实际路由组件会通过动态import按需加载，浏览器会自动预取 -->
+
+    <!-- 字体预加载（如果有自定义字体） -->
+    <!-- <link rel="preload" href="/src/assets/fonts/custom-font.woff2" as="font" type="font/woff2" crossorigin> -->
+
+    <!-- 性能优化说明：
+      1. dns-prefetch: 提前解析外部域名，减少DNS查询时间
+      2. preload: 预加载关键资源（CSS、字体等），提升首屏渲染速度
+      3. prefetch: 预取非关键资源（路由组件等），在浏览器空闲时加载
+      4. 路由组件通过动态import实现懒加载，浏览器会自动预取
+    -->
+  </head>
+  <body>
+    <div id="app"></div>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

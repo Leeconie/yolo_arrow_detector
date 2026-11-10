@@ -1,0 +1,586 @@
+/**
+ * @fileoverview 历史记录存储服务
+ * @module modules/video/upload/services/history-storage
+ * @author HeZaoCha
+ * @date 2026-01-11
+ * @description 基于IndexedDB的历史记录存储和管理服务
+ */
+
+import type {
+  UploadHistoryRecord,
+  HistoryQuery,
+  HistoryQueryResult,
+  UploadStatistics,
+  HistoryStorageConfig
+} from '../types/history'
+import {
+  HistoryRecordStatus,
+  HistorySortField,
+  HistorySortOrder
+} from '../types/history'
+import { DEFAULT_HISTORY_STORAGE_CONFIG } from '../types/history'
+import { logger } from '@/core/logger'
+
+/**
+ * 历史记录存储服务类
+ * 提供基于IndexedDB的历史记录CRUD操作和查询功能
+ */
+export class HistoryStorage {
+  private db: IDBDatabase | null = null
+  private readonly config: HistoryStorageConfig
+
+  constructor(config: Partial<HistoryStorageConfig> = {}) {
+    this.config = { ...DEFAULT_HISTORY_STORAGE_CONFIG, ...config }
+  }
+
+  /**
+   * 初始化数据库
+   * @returns Promise<void>
+   */
+  async init(): Promise<void> {
+    return new Promise<void>((resolve, reject) => {
+      if (this.db) return
+
+      try {
+        const request = indexedDB.open(this.config.dbName, this.config.version)
+
+        return new Promise((resolve, reject) => {
+          request.onerror = () => {
+            logger.error('IndexedDB初始化失败', {
+              context: { module: 'history.storage', function: 'init' },
+              error: request.error
+            })
+            reject(request.error || new Error('IndexedDB initialization failed'))
+          }
+
+          request.onsuccess = () => {
+            this.db = request.result
+            logger.info('历史记录数据库初始化成功', {
+              context: { module: 'history.storage', function: 'init' },
+              data: { dbName: this.config.dbName, version: this.config.version }
+            })
+            resolve()
+          }
+
+          request.onupgradeneeded = (event) => {
+            const db = (event.target as IDBOpenDBRequest).result
+            this.createObjectStore(db)
+          }
+        })
+      } catch (error) {
+        logger.error('IndexedDB初始化异常', {
+          context: { module: 'history.storage', function: 'init' },
+          error: error instanceof Error ? error : new Error(String(error))
+        })
+        throw error
+      }
+    }
+
+  /**
+   * 创建对象存储和索引
+   * @param db 数据库实例
+   * @private
+   */
+  private createObjectStore(db: IDBDatabase): void {
+    if (!db.objectStoreNames.contains(this.config.storeName)) {
+      const store = db.createObjectStore(this.config.storeName, { keyPath: 'id' })
+
+      // 创建索引
+      this.config.indexes.forEach((index) => {
+        store.createIndex(index.name, index.keyPath, index.options)
+      })
+
+      logger.info('历史记录对象存储创建成功', {
+        context: { module: 'history.storage', function: 'createObjectStore' },
+        data: { storeName: this.config.storeName, indexes: this.config.indexes.length }
+      })
+    }
+  }
+
+  /**
+   * 保存历史记录
+   * @param record 历史记录
+   * @returns Promise<void>
+   */
+  async saveRecord(record: UploadHistoryRecord): Promise<void> {
+    if (!this.db) await this.init()
+
+    return new Promise((resolve, reject) => {
+      const transaction = this.db!.transaction([this.config.storeName], 'readwrite')
+      const store = transaction.objectStore(this.config.storeName)
+
+      const request = store.put(record)
+
+      request.onsuccess = () => {
+        logger.info('历史记录保存成功', {
+          context: { module: 'history.storage', function: 'saveRecord' },
+          data: { recordId: record.id, filename: record.filename }
+        })
+        resolve()
+      }
+
+      request.onerror = () => {
+        logger.error('历史记录保存失败', {
+          context: { module: 'history.storage', function: 'saveRecord' },
+          error: request.error,
+          data: { recordId: record.id }
+        })
+        reject((request.error as Error) || new Error('Failed to save history record'))
+      }
+    })
+  }
+
+  /**
+   * 批量保存历史记录
+   * @param records 历史记录数组
+   * @returns Promise<void>
+   */
+  async saveRecords(records: UploadHistoryRecord[]): Promise<void> {
+    if (!this.db) await this.init()
+
+    const transaction = this.db!.transaction([this.config.storeName], 'readwrite')
+    const store = transaction.objectStore(this.config.storeName)
+
+    const promises = records.map(record => {
+      return new Promise<void>((resolve, reject) => {
+        const request = store.put(record)
+        request.onsuccess = () => resolve()
+        request.onerror = () => reject(request.error)
+      })
+    })
+
+    try {
+      await Promise.all(promises)
+      logger.info('批量历史记录保存成功', {
+        context: { module: 'history.storage', function: 'saveRecords' },
+        data: { count: records.length }
+      })
+    } catch (error) {
+      logger.error('批量历史记录保存失败', {
+        context: { module: 'history.storage', function: 'saveRecords' },
+        error: error instanceof Error ? error : new Error(String(error))
+      })
+      throw error
+    }
+  }
+
+  /**
+   * 获取历史记录
+   * @param id 记录ID
+   * @returns Promise<UploadHistoryRecord | null>
+   */
+  async getRecord(id: string): Promise<UploadHistoryRecord | null> {
+    if (!this.db) await this.init()
+
+    return new Promise((resolve, reject) => {
+      const transaction = this.db!.transaction([this.config.storeName], 'readonly')
+      const store = transaction.objectStore(this.config.storeName)
+      const request = store.get(id)
+
+      request.onsuccess = () => {
+        resolve(request.result || null)
+      }
+
+      request.onerror = () => {
+        logger.error('获取历史记录失败', {
+          context: { module: 'history.storage', function: 'getRecord' },
+          error: request.error,
+          data: { recordId: id }
+        })
+        reject((request.error as Error) || new Error('Failed to get history record'))
+      }
+    })
+  }
+
+  /**
+   * 查询历史记录
+   * @param query 查询参数
+   * @returns Promise<HistoryQueryResult>
+   */
+  async queryRecords(query: HistoryQuery): Promise<HistoryQueryResult> {
+    if (!this.db) await this.init()
+
+    const transaction = this.db!.transaction([this.config.storeName], 'readonly')
+    const store = transaction.objectStore(this.config.storeName)
+
+    // 获取所有记录
+    const allRecords = await this.getAllRecords(store)
+
+    // 应用筛选条件
+    let filteredRecords = this.applyFilters(allRecords, query)
+
+    // 应用排序
+    filteredRecords = this.applySorting(filteredRecords, query)
+
+    // 计算总数
+    const total = filteredRecords.length
+
+    // 应用分页
+    const startIndex = (query.page - 1) * query.pageSize
+    const endIndex = startIndex + query.pageSize
+    const paginatedRecords = filteredRecords.slice(startIndex, endIndex)
+
+    return {
+      records: paginatedRecords,
+      total,
+      page: query.page,
+      pageSize: query.pageSize,
+      totalPages: Math.ceil(total / query.pageSize)
+    }
+  }
+
+  /**
+   * 删除历史记录
+   * @param id 记录ID
+   * @returns Promise<void>
+   */
+  async deleteRecord(id: string): Promise<void> {
+    if (!this.db) await this.init()
+
+    return new Promise((resolve, reject) => {
+      const transaction = this.db!.transaction([this.config.storeName], 'readwrite')
+      const store = transaction.objectStore(this.config.storeName)
+      const request = store.delete(id)
+
+      request.onsuccess = () => {
+        logger.info('历史记录删除成功', {
+          context: { module: 'history.storage', function: 'deleteRecord' },
+          data: { recordId: id }
+        })
+        resolve()
+      }
+
+      request.onerror = () => {
+        logger.error('历史记录删除失败', {
+          context: { module: 'history.storage', function: 'deleteRecord' },
+          error: request.error,
+          data: { recordId: id }
+        })
+        reject((request.error as Error) || new Error('Failed to delete history record'))
+      }
+    })
+  }
+
+  /**
+   * 批量删除历史记录
+   * @param ids 记录ID数组
+   * @returns Promise<void>
+   */
+  async deleteRecords(ids: string[]): Promise<void> {
+    if (!this.db) await this.init()
+
+    const transaction = this.db!.transaction([this.config.storeName], 'readwrite')
+    const store = transaction.objectStore(this.config.storeName)
+
+    const promises = ids.map(id => {
+      return new Promise<void>((resolve, reject) => {
+        const request = store.delete(id)
+        request.onsuccess = () => resolve()
+        request.onerror = () => reject(request.error)
+      })
+    })
+
+    try {
+      await Promise.all(promises)
+      logger.info('批量历史记录删除成功', {
+        context: { module: 'history.storage', function: 'deleteRecords' },
+        data: { count: ids.length }
+      })
+    } catch (error) {
+      logger.error('批量历史记录删除失败', {
+        context: { module: 'history.storage', function: 'deleteRecords' },
+        error: error instanceof Error ? error : new Error(String(error))
+      })
+      throw error
+    }
+  }
+
+  /**
+   * 清空所有历史记录
+   * @returns Promise<void>
+   */
+  async clearAll(): Promise<void> {
+    if (!this.db) await this.init()
+
+    return new Promise((resolve, reject) => {
+      const transaction = this.db!.transaction([this.config.storeName], 'readwrite')
+      const store = transaction.objectStore(this.config.storeName)
+      const request = store.clear()
+
+      request.onsuccess = () => {
+        logger.info('历史记录清空成功', {
+          context: { module: 'history.storage', function: 'clearAll' }
+        })
+        resolve()
+      }
+
+      request.onerror = () => {
+        logger.error('历史记录清空失败', {
+          context: { module: 'history.storage', function: 'clearAll' },
+          error: request.error
+        })
+        reject((request.error as Error) || new Error('Failed to clear all history records'))
+      }
+    })
+  }
+
+  /**
+   * 计算统计数据
+   * @returns Promise<UploadStatistics>
+   */
+  async calculateStatistics(): Promise<UploadStatistics> {
+    if (!this.db) await this.init()
+
+    const transaction = this.db!.transaction([this.config.storeName], 'readonly')
+    const store = transaction.objectStore(this.config.storeName)
+
+    const allRecords = await this.getAllRecords(store)
+
+    // 基础统计
+    const totalUploads = allRecords.length
+    const totalSize = allRecords.reduce((sum, record) => sum + record.fileSize, 0)
+    const successfulUploads = allRecords.filter(r => r.status === HistoryRecordStatus.SUCCESS).length
+    const successRate = totalUploads > 0 ? (successfulUploads / totalUploads) * 100 : 0
+
+    // 类型分布
+    const typeDistribution: Record<string, number> = {}
+    allRecords.forEach(record => {
+      const type = record.videoType
+      typeDistribution[type] = (typeDistribution[type] || 0) + 1
+    })
+
+    // 时间分布统计
+    const dailyUploads = this.calculateDailyUploads(allRecords)
+    const weeklyUploads = this.calculateWeeklyUploads(allRecords)
+    const monthlyUploads = this.calculateMonthlyUploads(allRecords)
+
+    // 平均上传时间（这里简化计算，实际可根据上传开始和结束时间计算）
+    const averageUploadTime = 30000 // 30秒作为示例
+
+    return {
+      totalUploads,
+      totalSize,
+      successRate,
+      averageUploadTime,
+      typeDistribution,
+      dailyUploads,
+      weeklyUploads,
+      monthlyUploads
+    }
+  }
+
+  /**
+   * 清理过期记录
+   * @param maxAge 最大保留天数，默认90天
+   * @returns Promise<number> 删除的记录数量
+   */
+  async cleanupExpiredRecords(maxAge: number = this.config.retentionDays): Promise<number> {
+    if (!this.db) await this.init()
+
+    const cutoffDate = new Date(Date.now() - maxAge * 24 * 60 * 60 * 1000)
+    const transaction = this.db!.transaction([this.config.storeName], 'readwrite')
+    const store = transaction.objectStore(this.config.storeName)
+
+    const allRecords = await this.getAllRecords(store)
+    const expiredRecords = allRecords.filter(record => new Date(record.uploadTime) < cutoffDate)
+
+    if (expiredRecords.length === 0) return 0
+
+    const promises = expiredRecords.map(record => {
+      return new Promise<void>((resolve, reject) => {
+        const request = store.delete(record.id)
+        request.onsuccess = () => resolve()
+        request.onerror = () => reject(request.error)
+      })
+    })
+
+    await Promise.all(promises)
+
+    logger.info('过期历史记录清理完成', {
+      context: { module: 'history.storage', function: 'cleanupExpiredRecords' },
+      data: { deletedCount: expiredRecords.length, maxAge }
+    })
+
+    return expiredRecords.length
+  }
+
+  /**
+   * 获取存储信息
+   * @returns Promise<{recordCount: number, storageSize: number}>
+   */
+  async getStorageInfo(): Promise<{ recordCount: number; storageSize: number }> {
+    if (!this.db) await this.init()
+
+    const transaction = this.db!.transaction([this.config.storeName], 'readonly')
+    const store = transaction.objectStore(this.config.storeName)
+
+    const allRecords = await this.getAllRecords(store)
+    const storageSize = allRecords.reduce((size, record) => {
+      // 估算每条记录的大小（简化计算）
+      return size + JSON.stringify(record).length * 2 // UTF-16
+    }, 0)
+
+    return {
+      recordCount: allRecords.length,
+      storageSize
+    }
+  }
+
+  /**
+   * 获取所有记录
+   * @param store 对象存储
+   * @private
+   */
+  private async getAllRecords(store: IDBObjectStore): Promise<UploadHistoryRecord[]> {
+    return new Promise((resolve, reject) => {
+      const request = store.getAll()
+
+      request.onsuccess = () => {
+        resolve(request.result || [])
+      }
+
+      request.onerror = () => {
+        reject(request.error)
+      }
+    })
+  }
+
+  /**
+   * 应用筛选条件
+   * @param records 记录列表
+   * @param query 查询参数
+   * @private
+   */
+  private applyFilters(records: UploadHistoryRecord[], query: HistoryQuery): UploadHistoryRecord[] {
+    return records.filter(record => {
+      // 关键词搜索
+      if (query.keyword) {
+        const keyword = query.keyword.toLowerCase()
+        const filename = record.filename.toLowerCase()
+        if (!filename.includes(keyword)) return false
+      }
+
+      // 视频类型筛选
+      if (query.videoType && query.videoType.length > 0) {
+        if (!query.videoType.includes(record.videoType)) return false
+      }
+
+      // 状态筛选
+      if (query.status && query.status.length > 0) {
+        if (!query.status.includes(record.status)) return false
+      }
+
+      // 日期范围筛选
+      if (query.dateRange && query.dateRange.length === 2) {
+        const [startDate, endDate] = query.dateRange
+        const uploadDate = new Date(record.uploadTime)
+        if (uploadDate < startDate || uploadDate > endDate) return false
+      }
+
+      return true
+    })
+  }
+
+  /**
+   * 应用排序
+   * @param records 记录列表
+   * @param query 查询参数
+   * @private
+   */
+  private applySorting(records: UploadHistoryRecord[], query: HistoryQuery): UploadHistoryRecord[] {
+    const sortBy = query.sortBy || HistorySortField.UPLOAD_TIME
+    const sortOrder = query.sortOrder || HistorySortOrder.DESC
+
+    return records.sort((a, b) => {
+      let aValue: string | number
+      let bValue: string | number
+
+      switch (sortBy) {
+        case HistorySortField.UPLOAD_TIME:
+          aValue = new Date(a.uploadTime).getTime()
+          bValue = new Date(b.uploadTime).getTime()
+          break
+        case HistorySortField.FILE_SIZE:
+          aValue = a.fileSize
+          bValue = b.fileSize
+          break
+        case HistorySortField.FILENAME:
+          aValue = a.filename.toLowerCase()
+          bValue = b.filename.toLowerCase()
+          break
+        default:
+          return 0
+      }
+
+      if (aValue < bValue) return sortOrder === HistorySortOrder.ASC ? -1 : 1
+      if (aValue > bValue) return sortOrder === HistorySortOrder.ASC ? 1 : -1
+      return 0
+    })
+  }
+
+  /**
+   * 计算每日上传统计
+   * @param records 记录列表
+   * @private
+   */
+  private calculateDailyUploads(records: UploadHistoryRecord[]): Array<{ date: string; count: number }> {
+    const dailyMap = new Map<string, number>()
+
+    records.forEach(record => {
+      const date = new Date(record.uploadTime).toISOString().split('T')[0]
+      const currentCount = dailyMap.get(date) ?? 0
+      dailyMap.set(date, currentCount + 1)
+    })
+
+    return Array.from(dailyMap.entries())
+      .map(([date, count]) => ({ date, count }))
+      .sort((a, b) => a.date.localeCompare(b.date))
+      .slice(-30) // 最近30天
+  }
+
+  /**
+   * 计算每周上传统计
+   * @param records 记录列表
+   * @private
+   */
+  private calculateWeeklyUploads(records: UploadHistoryRecord[]): Array<{ week: string; count: number }> {
+    const weeklyMap = new Map<string, number>()
+
+    records.forEach(record => {
+      const date = new Date(record.uploadTime)
+      const year = date.getFullYear()
+      const week = Math.ceil((date.getDate() - date.getDay() + 1) / 7)
+      const weekKey = `${year}-W${week.toString().padStart(2, '0')}`
+      weeklyMap.set(weekKey, (weeklyMap.get(weekKey) || 0) + 1)
+    })
+
+    return Array.from(weeklyMap.entries())
+      .map(([week, count]) => ({ week, count }))
+      .sort((a, b) => a.week.localeCompare(b.week))
+      .slice(-12) // 最近12周
+  }
+
+  /**
+   * 计算每月上传统计
+   * @param records 记录列表
+   * @private
+   */
+  private calculateMonthlyUploads(records: UploadHistoryRecord[]): Array<{ month: string; count: number }> {
+    const monthlyMap = new Map<string, number>()
+
+    records.forEach(record => {
+      const date = new Date(record.uploadTime)
+      const month = `${date.getFullYear()}-${(date.getMonth() + 1).toString().padStart(2, '0')}`
+      monthlyMap.set(month, (monthlyMap.get(month) || 0) + 1)
+    })
+
+    return Array.from(monthlyMap.entries())
+      .map(([month, count]) => ({ month, count }))
+      .sort((a, b) => a.month.localeCompare(b.month))
+      .slice(-12) // 最近12个月
+  }
+}
+
+
+// 导出单例实例
+export const historyStorage = new HistoryStorage()

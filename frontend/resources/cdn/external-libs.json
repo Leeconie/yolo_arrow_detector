@@ -1,0 +1,186 @@
+{
+  "description": "外部库CDN配置清单",
+  "version": "1.0.0",
+  "lastUpdated": "2026-01-08",
+  "libraries": [
+    {
+      "name": "vue",
+      "version": "3.5.26",
+      "description": "Vue 3 核心库",
+      "cdn": [
+        {
+          "provider": "jsDelivr",
+          "url": "https://cdn.jsdelivr.net/npm/vue@3.5.26/dist/vue.global.prod.js",
+          "sri": "sha512-UX63mccKDa5OolzAepmONSjllKrqAooi1+E5tffJb3/dSBAFiUCYG/zQYwp4mUBj2i5AtFYLwiqxZQM7A8nPUg==",
+          "type": "script",
+          "priority": 1
+        },
+        {
+          "provider": "unpkg",
+          "url": "https://unpkg.com/vue@3.5.26/dist/vue.global.prod.js",
+          "sri": "sha512-UX63mccKDa5OolzAepmONSjllKrqAooi1+E5tffJb3/dSBAFiUCYG/zQYwp4mUBj2i5AtFYLwiqxZQM7A8nPUg==",
+          "type": "script",
+          "priority": 2
+        }
+      ],
+      "usage": "生产环境使用，开发环境使用本地依赖"
+    },
+    {
+      "name": "vue-router",
+      "version": "4.6.4",
+      "description": "Vue Router 4 路由库",
+      "cdn": [
+        {
+          "provider": "jsDelivr",
+          "url": "https://cdn.jsdelivr.net/npm/vue-router@4.6.4/dist/vue-router.global.prod.js",
+          "sri": "sha512-CBi8gE4zK8V4Ux+USHOnQBQ1hnedpavVVCTa/5flDF8U8BxG9rhegAgtazHmugQBmnubJrSii974rvA/zHPmfg==",
+          "type": "script",
+          "priority": 1
+        },
+        {
+          "provider": "unpkg",
+          "url": "https://unpkg.com/vue-router@4.6.4/dist/vue-router.global.prod.js",
+          "sri": "sha512-CBi8gE4zK8V4Ux+USHOnQBQ1hnedpavVVCTa/5flDF8U8BxG9rhegAgtazHmugQBmnubJrSii974rvA/zHPmfg==",
+          "type": "script",
+          "priority": 2
+        }
+      ],
+      "usage": "生产环境使用，开发环境使用本地依赖"
+    },
+    {
+      "name": "pinia",
+      "version": "3.0.4",
+      "description": "Pinia 状态管理库",
+      "cdn": [
+        {
+          "provider": "jsDelivr",
+          "url": "https://cdn.jsdelivr.net/npm/pinia@3.0.4/dist/pinia.iife.prod.js",
+          "sri": "sha512-+9vjTXyxIRlFyNUMNS2GHxAObWbxD/M4yZFKwDeGvK5TNp02XrtQpwnkm8Q/WpErv+Ul25GqDpe5EiwaYRxVUA==",
+          "type": "script",
+          "priority": 1
+        },
+        {
+          "provider": "unpkg",
+          "url": "https://unpkg.com/pinia@3.0.4/dist/pinia.iife.prod.js",
+          "sri": "sha512-+9vjTXyxIRlFyNUMNS2GHxAObWbxD/M4yZFKwDeGvK5TNp02XrtQpwnkm8Q/WpErv+Ul25GqDpe5EiwaYRxVUA==",
+          "type": "script",
+          "priority": 2
+        }
+      ],
+      "usage": "生产环境使用，开发环境使用本地依赖"
+    },
+    {
+      "name": "element-plus",
+      "version": "2.13.0",
+      "description": "Element Plus UI组件库",
+      "cdn": [
+        {
+          "provider": "cdnjs",
+          "url": "https://cdnjs.cloudflare.com/ajax/libs/element-plus/2.13.0/index.full.min.js",
+          "sri": "sha512-DRED9DeiF6RJHwzmbFAZQgn/Uj6v4ps+BzXiOl0kDNwNVFncSwKIPEtYaLX9O3oePJRFn6eAz2YuujFQgW+gVw==",
+          "type": "script",
+          "priority": 1
+        },
+        {
+          "provider": "jsDelivr",
+          "url": "https://cdn.jsdelivr.net/npm/element-plus@2.13.0/dist/index.full.min.js",
+          "sri": "sha512-DRED9DeiF6RJHwzmbFAZQgn/Uj6v4ps+BzXiOl0kDNwNVFncSwKIPEtYaLX9O3oePJRFn6eAz2YuujFQgW+gVw==",
+          "type": "script",
+          "priority": 2
+        }
+      ],
+      "css": [
+        {
+          "provider": "cdnjs",
+          "url": "https://cdnjs.cloudflare.com/ajax/libs/element-plus/2.13.0/index.min.css",
+          "sri": "sha512-5CdJ78YEIZYWFRnSTkvM4Nhek/ADn58scs+QQeJHS8rpdrMpVa+eIQnpc3KL6OtAOlPHGSKuOo6/5ysMY3t87w==",
+          "type": "stylesheet",
+          "priority": 1
+        },
+        {
+          "provider": "jsDelivr",
+          "url": "https://cdn.jsdelivr.net/npm/element-plus@2.13.0/dist/index.min.css",
+          "sri": "sha512-gcDM2T2C3W2+19NeP5UOKLQayKym7EEuh5J0UO/24uGJ9NLoUGJKYEeB0KDqoLnW2RVLBOYImxUgjle3PkOLfw==",
+          "type": "stylesheet",
+          "priority": 2
+        }
+      ],
+      "usage": "生产环境使用，开发环境使用本地依赖"
+    },
+    {
+      "name": "@element-plus/icons-vue",
+      "version": "2.3.1",
+      "description": "Element Plus 图标库",
+      "cdn": [
+        {
+          "provider": "jsDelivr",
+          "url": "https://cdn.jsdelivr.net/npm/@element-plus/icons-vue@2.3.1/dist/index.iife.min.js",
+          "sri": "sha512-F2sV0V7qeAmq6FfnxL1WrmueAprl0Um6wJgZ2S4iDfcCxhKXI89cxegixmrX4LB+epMApTxZ1jItY4RX7Tje/w==",
+          "type": "script",
+          "priority": 1
+        },
+        {
+          "provider": "cdnjs",
+          "url": "https://cdnjs.cloudflare.com/ajax/libs/element-plus-icons-vue/2.3.1/index.iife.min.js",
+          "sri": "sha512-F2sV0V7qeAmq6FfnxL1WrmueAprl0Um6wJgZ2S4iDfcCxhKXI89cxegixmrX4LB+epMApTxZ1jItY4RX7Tje/w==",
+          "type": "script",
+          "priority": 2
+        }
+      ],
+      "usage": "生产环境使用，开发环境使用本地依赖",
+      "note": "图标库通常建议使用本地依赖，CDN加载可能影响按需加载"
+    },
+    {
+      "name": "axios",
+      "version": "1.13.2",
+      "description": "Axios HTTP客户端",
+      "cdn": [
+        {
+          "provider": "unpkg",
+          "url": "https://unpkg.com/axios@1.13.2/dist/axios.min.js",
+          "sri": "sha512-fz5OUhvRocxVANpOJv1PvjjYnR6NfSrk/n6BpF2UfPWuy6PSlQ6aTXp9f4e0vFgDiiNUFC63gtkN5Je7yDjviw==",
+          "type": "script",
+          "priority": 1
+        },
+        {
+          "provider": "jsDelivr",
+          "url": "https://cdn.jsdelivr.net/npm/axios@1.13.2/dist/axios.min.js",
+          "sri": "sha512-fz5OUhvRocxVANpOJv1PvjjYnR6NfSrk/n6BpF2UfPWuy6PSlQ6aTXp9f4e0vFgDiiNUFC63gtkN5Je7yDjviw==",
+          "type": "script",
+          "priority": 2
+        }
+      ],
+      "usage": "生产环境使用，开发环境使用本地依赖"
+    },
+    {
+      "name": "dompurify",
+      "version": "3.3.1",
+      "description": "DOMPurify XSS防护库",
+      "cdn": [
+        {
+          "provider": "unpkg",
+          "url": "https://unpkg.com/dompurify@3.3.1/dist/purify.min.js",
+          "sri": "sha512-5jelfiV3gVtf3Gs7FeQ+Yd1PooftbzheFzCx1w8/VQehobEDQ3jVdIg9x9mB6/gSBx+jWX8eGe6BCHQdGAZEBw==",
+          "type": "script",
+          "priority": 1
+        },
+        {
+          "provider": "jsDelivr",
+          "url": "https://cdn.jsdelivr.net/npm/dompurify@3.3.1/dist/purify.min.js",
+          "sri": "sha512-5jelfiV3gVtf3Gs7FeQ+Yd1PooftbzheFzCx1w8/VQehobEDQ3jVdIg9x9mB6/gSBx+jWX8eGe6BCHQdGAZEBw==",
+          "type": "script",
+          "priority": 2
+        }
+      ],
+      "usage": "生产环境使用，开发环境使用本地依赖"
+    }
+  ],
+  "notes": [
+    "所有CDN资源必须使用SRI（Subresource Integrity）校验",
+    "生产环境建议使用jsDelivr或cdnjs（Cloudflare）",
+    "开发环境可以使用unpkg进行快速测试",
+    "SRI哈希值生成工具：https://www.srihash.org/",
+    "版本号必须与package.json中的版本一致",
+    "建议配置多个CDN备选，确保资源可用性"
+  ]
+}

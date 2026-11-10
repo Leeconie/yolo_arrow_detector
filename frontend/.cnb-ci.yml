@@ -1,0 +1,99 @@
+# CNB CI 配置 - E2E测试流水线
+# 参考GitHub Actions配置，确保命令与端口一致
+
+name: e2e-tests
+type: pipeline
+
+trigger:
+  branches:
+    - main
+    - develop
+    - feature/**
+  pull_request:
+    - main
+    - develop
+
+env:
+  NODE_VERSION: "20"
+  PNPM_VERSION: "10"
+  DEV_PORT: "4000"
+  MOCK_PORT: "3001"
+  CI: "true"
+
+jobs:
+  test-e2e:
+    image: node:20
+    timeout: 30m
+
+    steps:
+      - name: Checkout代码
+        run: checkout
+
+      - name: 安装pnpm
+        run: |
+          npm install -g pnpm@10
+          pnpm --version
+
+      - name: 缓存pnpm store
+        cache:
+          key: pnpm-{{ checksum "pnpm-lock.yaml" }}
+          paths:
+            - ~/.pnpm-store
+
+      - name: 安装依赖
+        run: pnpm install --frozen-lockfile
+
+      - name: 安装Playwright浏览器
+        run: pnpm exec playwright install --with-deps chromium
+
+      - name: 构建应用（可选）
+        run: pnpm build || echo "无构建步骤"
+        continue-on-error: true
+
+      - name: 启动开发服务器
+        run: |
+          pnpm dev &
+          echo "等待开发服务器就绪..."
+          npx wait-on http://localhost:4000 -t 120000
+        background: true
+
+      - name: 启动Mock上传服务器
+        run: |
+          node scripts/mock-upload-server.js &
+          echo "等待Mock服务器就绪..."
+          npx wait-on http://localhost:3001/health -t 30000
+        background: true
+
+      - name: 运行E2E测试（Chromium）
+        run: pnpm test:e2e video-uploader-ui --project=chromium
+
+      - name: 上传Playwright报告
+        artifact:
+          name: playwright-report
+          path: playwright-report/
+          retention: 7d
+        when: always
+
+      - name: 上传测试结果
+        artifact:
+          name: test-results
+          path: test-results/
+          retention: 7d
+        when: always
+
+      - name: 上传失败截图
+        artifact:
+          name: failure-screenshots
+          path: test-results/**/*.png
+          retention: 7d
+        when: failure
+
+    notifications:
+      success:
+        - type: webhook
+          url: ${NOTIFICATION_WEBHOOK}
+          message: "E2E测试通过 ✅"
+      failure:
+        - type: webhook
+          url: ${NOTIFICATION_WEBHOOK}
+          message: "E2E测试失败 ❌ - 请检查artifacts"

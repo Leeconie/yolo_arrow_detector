@@ -1,0 +1,30 @@
+# ---- Node / 前端 ----
+node_modules/
+dist/
+coverage/
+.vite/
+*.tsbuildinfo
+
+# ---- Python / 后端 ----
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+
+# 推理产物（标注视频会持续累积，不入库）
+backend/outputs/
+
+# ---- 环境变量 ----
+.env
+.env.local
+.env.*.local
+
+# ---- 测试与日志 ----
+test-results/
+playwright-report/
+*.log
+
+# ---- 编辑器 / 系统 ----
+.DS_Store
+Thumbs.db
+.idea/

@@ -1,0 +1,139 @@
+/**
+ * @fileoverview Playwright E2E测试配置
+ * @module playwright.config
+ * @author HeZaoCha
+ * @date 2026-01-11
+ * @description Playwright端到端测试配置文件，支持多浏览器、多设备测试
+ * @dependencies @playwright/test
+ */
+
+import process from 'node:process'
+import { defineConfig, devices } from '@playwright/test'
+
+/**
+ * Read environment variables from file.
+ * https://github.com/motdotla/dotenv
+ */
+// require('dotenv').config();
+
+/**
+ * See https://playwright.dev/docs/test-configuration.
+ */
+export default defineConfig({
+  testDir: './e2e',
+  /* Maximum time one test can run for. */
+  timeout: 60 * 1000, // 增加到60秒，减少机器性能波动导致的误报
+  expect: {
+    /**
+     * Maximum time expect() should wait for the condition to be met.
+     * For example in `await expect(locator).toHaveText();`
+     */
+    timeout: 10000, // 增加到10秒，给Element Plus等组件更多渲染时间
+  },
+  /* Fail the build on CI if you accidentally left test.only in the source code. */
+  forbidOnly: !!process.env.CI,
+  /* Retry on CI only */
+  retries: process.env.CI ? 2 : 0,
+  /* Opt out of parallel tests on CI. */
+  workers: process.env.CI ? 1 : undefined,
+  /* Reporter to use. See https://playwright.dev/docs/test-reporters */
+  reporter: 'html',
+  /* Shared settings for all the projects below. See https://playwright.dev/docs/api/class-testoptions. */
+  use: {
+    /* Maximum time each action such as `click()` can take. Defaults to 0 (no limit). */
+    actionTimeout: 0,
+    /* Base URL to use in actions like `await page.goto('/')`. */
+    baseURL: process.env.CI ? 'http://localhost:4173' : 'http://localhost:4000',
+
+    /* Collect trace when retrying the failed test. See https://playwright.dev/docs/trace-viewer */
+    trace: 'on-first-retry',
+
+    /* Only on CI systems run the tests headless */
+    headless: !!process.env.CI,
+
+    /* Screenshot on failure */
+    screenshot: 'only-on-failure',
+
+    /* Video on failure */
+    video: 'retain-on-failure',
+  },
+
+  /* Configure projects for major browsers */
+  projects: [
+    // 认证设置 - 在其他测试之前运行
+    {
+      name: 'setup',
+      testMatch: /.*\.setup\.ts/,
+    },
+    // Chromium测试 - 依赖认证设置
+    {
+      name: 'chromium',
+      use: {
+        ...devices['Desktop Chrome'],
+        // 使用保存的认证状态
+        storageState: './e2e/.auth/user.json',
+      },
+      dependencies: ['setup'],
+    },
+    {
+      name: 'firefox',
+      use: {
+        ...devices['Desktop Firefox'],
+        storageState: './e2e/.auth/user.json',
+      },
+      dependencies: ['setup'],
+    },
+    {
+      name: 'webkit',
+      use: {
+        ...devices['Desktop Safari'],
+        storageState: './e2e/.auth/user.json',
+      },
+      dependencies: ['setup'],
+    },
+
+    /* Test against mobile viewports. */
+    // {
+    //   name: 'Mobile Chrome',
+    //   use: {
+    //     ...devices['Pixel 5'],
+    //   },
+    // },
+    // {
+    //   name: 'Mobile Safari',
+    //   use: {
+    //     ...devices['iPhone 12'],
+    //   },
+    // },
+
+    /* Test against branded browsers. */
+    // {
+    //   name: 'Microsoft Edge',
+    //   use: {
+    //     channel: 'msedge',
+    //   },
+    // },
+    // {
+    //   name: 'Google Chrome',
+    //   use: {
+    //     channel: 'chrome',
+    //   },
+    // },
+  ],
+
+  /* Folder for test artifacts such as screenshots, videos, traces, etc. */
+  // outputDir: 'test-results/',
+
+  /* Run your local dev server before starting the tests */
+  webServer: {
+    /**
+     * Use the dev server by default for faster feedback loop.
+     * Use the preview server on CI for more realistic testing.
+     * Playwright will re-use the local server if there is already a dev-server running.
+     */
+    command: process.env.CI ? 'npm run preview' : 'npm run dev',
+    port: process.env.CI ? 4173 : 4000,
+    reuseExistingServer: true, // 总是复用已存在的服务器
+    timeout: 120 * 1000, // 2分钟超时
+  },
+})

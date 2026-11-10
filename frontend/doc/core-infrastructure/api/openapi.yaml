@@ -1,0 +1,605 @@
+openapi: 3.0.3
+info:
+  title: 核心基础设施模块 API 文档
+  description: |
+    核心基础设施模块提供统一的HTTP请求封装，包括请求拦截、响应拦截、错误处理、性能优化等功能。
+
+    所有API请求都通过统一的请求封装方法进行，支持自动添加认证Token、统一错误处理、请求重试、请求取消、Mock服务、请求缓存、并发控制、性能监控等功能。
+
+    ## 认证方式
+
+    所有需要认证的API请求都需要在请求头中携带Bearer Token和CSRF Token：
+
+    ```
+    Authorization: Bearer <token>
+    X-CSRF-Token: <csrf-token>
+    ```
+
+    Token通过请求拦截器自动添加到请求头中，无需手动设置。Token会自动缓存，减少重复获取。
+
+    ### Token刷新机制
+
+    - Token即将过期时（剩余时间<5分钟），会自动刷新Token
+    - Token刷新失败时，会自动跳转到登录页
+    - Token通过JWT解析，自动检测过期时间
+
+    ### CSRF防护
+
+    - 所有需要CSRF防护的请求（POST、PUT、DELETE）会自动添加CSRF Token
+    - CSRF Token会自动生成并缓存，减少重复生成
+    - CSRF Token存储在localStorage中，有效期1小时
+
+    详细认证设置请参考：[认证设置指南](./authentication.md)
+
+    ## 响应格式
+
+    所有API响应都遵循统一的格式：
+
+    ```json
+    {
+      "code": 200,
+      "message": "Success",
+      "data": {},
+      "timestamp": 1234567890
+    }
+    ```
+
+    - `code`: 业务状态码，200表示成功
+    - `message`: 响应消息
+    - `data`: 响应数据
+    - `timestamp`: 时间戳（可选）
+
+    ## 错误处理
+
+    当业务状态码不为200时，响应拦截器会自动处理错误：
+    - 401: 未授权，自动跳转登录页
+    - 403: 无权限，显示权限不足提示
+    - 其他错误: 显示错误消息
+
+    错误消息会自动映射为友好的中文提示，网络错误会自动识别类型并提供相应的解决方案。
+
+    详细错误代码参考请参考：[错误代码参考](./error-codes.md)
+
+    ## 请求重试
+
+    请求封装支持自动重试机制，当遇到网络错误、5xx服务器错误或超时错误时，会自动进行重试：
+    - 默认重试3次
+    - 使用指数退避算法计算重试延迟（第1次1000ms，第2次2000ms，第3次4000ms）
+    - 最大延迟时间：10000ms
+    - 可通过`retryCount`配置重试次数
+    - 可通过`skipRetry`跳过重试
+
+    ## 请求取消
+
+    支持使用`AbortController`取消正在进行的请求：
+    - 使用`createAbortController()`创建控制器
+    - 通过`signal`参数传递取消信号
+    - 调用`controller.abort()`取消请求
+    - 取消的请求不会触发重试机制
+
+    ## 性能优化功能
+
+    ### 请求缓存机制
+
+    GET请求默认启用缓存，提升响应速度和减少服务器压力：
+    - 使用LRU（最近最少使用）缓存策略
+    - 默认缓存时间：5分钟
+    - 最大缓存数量：100条
+    - 支持TTL（Time-To-Live）过期策略
+    - 支持版本控制，API版本更新时自动失效相关缓存
+    - 可通过`skipCache`配置跳过缓存（强制刷新）
+
+    ### 请求并发控制
+
+    所有请求都支持并发控制和优先级处理：
+    - 默认最大并发数：10
+    - 支持请求优先级（高优先级优先处理）
+    - 支持请求去重（相同请求在时间窗口内只发送一次）
+    - 去重时间窗口：1000ms
+
+    ### 性能监控
+
+    所有请求都自动进行性能监控：
+    - 记录请求总耗时
+    - 记录拦截器耗时
+    - 记录网络请求耗时
+    - 记录响应处理耗时
+    - 统计缓存命中率
+    - 统计成功/失败请求数
+
+    ### Token缓存优化
+
+    - Token自动缓存，减少重复获取和刷新
+    - CSRF Token自动缓存，减少重复生成
+    - 缓存有效期：Token 5分钟，CSRF Token 1小时
+
+    ## Mock服务
+
+    开发环境支持使用API FOX Mock服务进行接口模拟：
+    - 通过环境变量`VITE_ENABLE_MOCK`启用Mock服务
+    - 通过环境变量`VITE_APIFOX_TOKEN`配置Mock Token
+    - Mock Token会自动添加到请求头中
+
+  version: 0.4.0
+  contact:
+    name: 开发团队
+    email: dev@example.com
+
+servers:
+  - url: /api
+    description: API基础路径
+  - url: http://localhost:8080/api
+    description: 开发环境
+  - url: https://api.example.com/api
+    description: 生产环境
+
+tags:
+  - name: HTTP请求封装
+    description: 统一的HTTP请求封装方法
+
+paths:
+  /{path}:
+    get:
+      tags:
+        - HTTP请求封装
+      summary: GET请求
+      description: |
+        发送GET请求，支持查询参数。
+
+        ## 使用示例
+
+        ```typescript
+        import { get, createAbortController } from '@/core/api/request'
+
+        // 基本用法
+        const userInfo = await get<UserInfo>('/user/info', { id: 1 })
+
+        // 带配置的请求
+        const data = await get<ResponseData>('/data', { page: 1 }, {
+          timeout: 5000
+        })
+
+        // 带重试功能的请求（网络错误自动重试）
+        const result = await get<ResponseData>('/data', { page: 1 }, {
+          retryCount: 3  // 最多重试3次
+        })
+
+        // 带取消功能的请求
+        const controller = createAbortController()
+        const promise = get<UserInfo>('/user/info', { id: 1 }, {
+          signal: controller.signal
+        })
+        // 取消请求
+        controller.abort()
+
+        // 使用缓存的GET请求（默认启用）
+        const cachedData = await get<UserInfo>('/user/info', { id: 1 })
+        // 第二次请求会直接返回缓存数据，不会发送网络请求
+
+        // 跳过缓存（强制刷新）
+        const freshData = await get<UserInfo>('/user/info', { id: 1 }, {
+          skipCache: true
+        })
+
+        // 高优先级请求（优先处理）
+        const urgentData = await get<UserInfo>('/user/info', { id: 1 }, {
+          priority: 1  // 1=高优先级，2=普通优先级
+        })
+        ```
+      operationId: getRequest
+      parameters:
+        - name: path
+          in: path
+          required: true
+          description: API路径
+          schema:
+            type: string
+            example: user/info
+        - name: params
+          in: query
+          description: 查询参数
+          required: false
+          style: form
+          explode: true
+          schema:
+            type: object
+            additionalProperties: true
+            example:
+              id: 1
+              page: 1
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: 请求成功
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiResponse"
+              examples:
+                success:
+                  value:
+                    code: 200
+                    message: Success
+                    data:
+                      id: 1
+                      name: "Test User"
+                    timestamp: 1704614400000
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/ServerError"
+
+    post:
+      tags:
+        - HTTP请求封装
+      summary: POST请求
+      description: |
+        发送POST请求，支持请求体数据。
+
+        ## 使用示例
+
+        ```typescript
+        import { post, createAbortController } from '@/core/api/request'
+
+        // 基本用法
+        const result = await post<CreateResult>('/user', {
+          name: 'John',
+          email: 'john@example.com'
+        })
+
+        // 带重试功能的请求
+        const data = await post<ResponseData>('/data', requestData, {
+          retryCount: 3  // 最多重试3次
+        })
+
+        // 带取消功能的请求
+        const controller = createAbortController()
+        const promise = post<CreateResult>('/user', userData, {
+          signal: controller.signal
+        })
+        controller.abort()
+
+        // 高优先级请求（优先处理）
+        const urgentResult = await post<CreateResult>('/user', userData, {
+          priority: 1  // 1=高优先级，2=普通优先级
+        })
+        ```
+      operationId: postRequest
+      parameters:
+        - name: path
+          in: path
+          required: true
+          description: API路径
+          schema:
+            type: string
+            example: user
+      requestBody:
+        description: 请求体数据
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+            example:
+              name: "John"
+              email: "john@example.com"
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: 请求成功
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/ServerError"
+
+    put:
+      tags:
+        - HTTP请求封装
+      summary: PUT请求
+      description: |
+        发送PUT请求，用于更新资源。
+
+        ## 使用示例
+
+        ```typescript
+        import { put } from '@/core/api/request'
+
+        // 基本用法
+        const result = await put<UpdateResult>('/user/1', {
+          name: 'John Updated'
+        })
+
+        // 带重试和取消功能
+        const controller = createAbortController()
+        const promise = put<UpdateResult>('/user/1', userData, {
+          signal: controller.signal,
+          retryCount: 2
+        })
+
+        // 高优先级请求
+        const urgentResult = await put<UpdateResult>('/user/1', userData, {
+          priority: 1
+        })
+        ```
+      operationId: putRequest
+      parameters:
+        - name: path
+          in: path
+          required: true
+          description: API路径
+          schema:
+            type: string
+            example: user/1
+      requestBody:
+        description: 请求体数据
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: 请求成功
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/ServerError"
+
+    delete:
+      tags:
+        - HTTP请求封装
+      summary: DELETE请求
+      description: |
+        发送DELETE请求，用于删除资源。
+
+        ## 使用示例
+
+        ```typescript
+        import { del } from '@/core/api/request'
+
+        // 基本用法
+        const result = await del<DeleteResult>('/user/1')
+
+        // 带重试功能
+        const result = await del<DeleteResult>('/user/1', {
+          retryCount: 3
+        })
+
+        // 高优先级请求
+        const urgentResult = await del<DeleteResult>('/user/1', {
+          priority: 1
+        })
+        ```
+      operationId: deleteRequest
+      parameters:
+        - name: path
+          in: path
+          required: true
+          description: API路径
+          schema:
+            type: string
+            example: user/1
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: 请求成功
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/ServerError"
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: |
+        使用Bearer Token进行认证。Token通过请求拦截器自动添加到请求头中。
+
+        格式：`Authorization: Bearer <token>`
+
+        Token会自动缓存，减少重复获取。Token即将过期时（剩余时间<5分钟）会自动刷新。
+
+        详细认证设置请参考：[认证设置指南](./authentication.md)
+
+    csrfToken:
+      type: apiKey
+      in: header
+      name: X-CSRF-Token
+      description: |
+        CSRF防护Token。所有需要CSRF防护的请求（POST、PUT、DELETE）会自动添加CSRF Token。
+
+        CSRF Token会自动生成并缓存，有效期1小时。
+
+        详细说明请参考：[认证设置指南](./authentication.md)
+
+  schemas:
+    ApiResponse:
+      type: object
+      description: 统一的API响应格式
+      required:
+        - code
+        - message
+        - data
+      properties:
+        code:
+          type: integer
+          description: 业务状态码，200表示成功
+          example: 200
+        message:
+          type: string
+          description: 响应消息
+          example: Success
+        data:
+          description: 响应数据，类型根据具体接口而定
+          oneOf:
+            - type: object
+            - type: array
+            - type: string
+            - type: number
+            - type: boolean
+        timestamp:
+          type: integer
+          description: 时间戳（可选）
+          example: 1704614400000
+
+    ApiError:
+      type: object
+      description: API错误响应
+      required:
+        - code
+        - message
+      properties:
+        code:
+          type: integer
+          description: 错误码
+          example: 400
+        message:
+          type: string
+          description: 错误消息
+          example: Bad Request
+        details:
+          description: 错误详情（可选）
+          type: object
+          additionalProperties: true
+
+    RequestConfig:
+      type: object
+      description: 请求配置选项
+      properties:
+        timeout:
+          type: integer
+          description: 请求超时时间（毫秒）
+          example: 30000
+        showLoading:
+          type: boolean
+          description: 是否显示加载提示
+          example: true
+        showError:
+          type: boolean
+          description: 是否显示错误提示
+          example: true
+        retryCount:
+          type: integer
+          description: 请求重试次数（0表示不重试）
+          minimum: 0
+          maximum: 10
+          default: 3
+          example: 3
+        signal:
+          type: string
+          description: 请求取消信号（AbortSignal）
+          format: string
+        skipRetry:
+          type: boolean
+          description: 是否跳过重试（用于某些特殊场景）
+          example: false
+        skipCache:
+          type: boolean
+          description: 是否跳过缓存（用于强制刷新，仅对GET请求有效）
+          example: false
+        priority:
+          type: integer
+          description: 请求优先级（1=高优先级，2=普通优先级）
+          enum: [1, 2]
+          default: 2
+          example: 2
+
+  responses:
+    Unauthorized:
+      description: 未授权，Token无效或已过期
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ApiError"
+          example:
+            code: 401
+            message: 登录已过期，请重新登录
+
+    Forbidden:
+      description: 无权限访问该资源
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ApiError"
+          example:
+            code: 403
+            message: 您没有操作权限
+
+    NotFound:
+      description: 请求的资源不存在
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ApiError"
+          example:
+            code: 404
+            message: 请求的资源不存在
+
+    ServerError:
+      description: 服务器内部错误
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ApiError"
+          example:
+            code: 500
+            message: 服务器内部错误
+
+    NetworkError:
+      description: 网络错误（无响应、超时、DNS失败等）
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ApiError"
+          example:
+            code: 0
+            message: 网络连接失败，请检查网络设置
+
+    Timeout:
+      description: 请求超时
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ApiError"
+          example:
+            code: 408
+            message: 请求超时，请检查网络连接后重试
+
+    BadRequest:
+      description: 请求参数错误
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ApiError"
+          example:
+            code: 400
+            message: 请求参数错误，请检查请求参数

@@ -1,0 +1,199 @@
+openapi: 3.0.3
+info:
+  title: 射箭分析模块 API 文档
+  description: |
+    射箭分析模块提供射箭分析摘要获取等功能。
+    
+    ## 认证方式
+    
+    所有API请求都需要在请求头中携带Bearer Token：
+    
+    ```
+    Authorization: Bearer <token>
+    ```
+  version: 1.0.0
+  contact:
+    name: 开发团队
+    email: dev@example.com
+
+servers:
+  - url: /api
+    description: API基础路径
+
+tags:
+  - name: 射箭分析
+    description: 射箭分析相关接口
+
+paths:
+  /analysis/archerySummary:
+    get:
+      tags:
+        - 射箭分析
+      summary: 获取射箭分析摘要
+      description: |
+        根据视频ID获取射箭分析的摘要信息，包括命中点、环数统计等。
+        
+        ## 使用示例
+        
+        ```typescript
+        import { get } from '@/core/api'
+        
+        const summary = await get<ArcherySummary>('/analysis/archerySummary', {
+          videoId: 'video_123456'
+        })
+        ```
+      operationId: getArcherySummary
+      parameters:
+        - name: videoId
+          in: query
+          required: true
+          description: 视频ID
+          schema:
+            type: string
+            example: "video_123456"
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: 获取成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ArcherySummaryResponse'
+        '400':
+          description: 请求参数错误
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          description: 视频或分析结果不存在
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Bearer Token认证
+  
+  schemas:
+    HitPoint:
+      type: object
+      description: 命中点
+      properties:
+        x:
+          type: number
+          description: X坐标
+          example: 100.5
+        y:
+          type: number
+          description: Y坐标
+          example: 200.3
+        ring:
+          type: integer
+          description: 环数（1-10）
+          example: 8
+        frameIndex:
+          type: integer
+          description: 帧索引
+          example: 100
+    
+    ArcherySummary:
+      type: object
+      description: 射箭分析摘要
+      properties:
+        videoId:
+          type: string
+          description: 视频ID
+          example: "video_123456"
+        totalShots:
+          type: integer
+          description: 总箭数
+          example: 10
+        hitPoints:
+          type: array
+          description: 命中点列表
+          items:
+            $ref: '#/components/schemas/HitPoint'
+        averageRing:
+          type: number
+          description: 平均环数
+          example: 8.5
+        bestRing:
+          type: integer
+          description: 最高环数
+          example: 10
+        worstRing:
+          type: integer
+          description: 最低环数
+          example: 6
+        ringDistribution:
+          type: object
+          description: 环数分布
+          additionalProperties:
+            type: integer
+          example:
+            "10": 2
+            "9": 3
+            "8": 3
+            "7": 1
+            "6": 1
+    
+    ArcherySummaryResponse:
+      type: object
+      description: 射箭分析摘要响应
+      properties:
+        code:
+          type: integer
+          example: 200
+        message:
+          type: string
+          example: "Success"
+        data:
+          $ref: '#/components/schemas/ArcherySummary'
+    
+    ApiError:
+      type: object
+      description: API错误响应
+      required:
+        - code
+        - message
+      properties:
+        code:
+          type: integer
+          description: 错误码
+          example: 400
+        message:
+          type: string
+          description: 错误消息
+          example: Bad Request
+  
+  responses:
+    Unauthorized:
+      description: 未授权，Token无效或已过期
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiError'
+          example:
+            code: 401
+            message: 登录已过期，请重新登录
+    
+    ServerError:
+      description: 服务器内部错误
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiError'
+          example:
+            code: 500
+            message: 服务器内部错误

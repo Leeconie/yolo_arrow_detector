@@ -1,0 +1,52 @@
+{
+  "description": "静态资源CDN配置清单",
+  "version": "1.0.0",
+  "lastUpdated": "2026-01-08",
+  "assets": {
+    "images": [
+      {
+        "name": "logo.png",
+        "description": "项目Logo",
+        "cdn": [
+          {
+            "provider": "jsDelivr",
+            "url": "请配置实际的CDN URL",
+            "sri": "请使用 https://www.srihash.org/ 生成SRI哈希值",
+            "type": "image",
+            "priority": 1
+          }
+        ],
+        "usage": "项目Logo图片，建议使用CDN加速"
+      }
+    ],
+    "fonts": [
+      {
+        "name": "custom-font.woff2",
+        "description": "自定义字体文件",
+        "cdn": [
+          {
+            "provider": "jsDelivr",
+            "url": "请配置实际的CDN URL",
+            "sri": "请使用 https://www.srihash.org/ 生成SRI哈希值",
+            "type": "font",
+            "priority": 1
+          }
+        ],
+        "usage": "自定义字体，建议使用CDN加速",
+        "note": "字体文件较大，使用CDN可以显著提升加载速度"
+      }
+    ],
+    "other": []
+  },
+  "notes": [
+    "静态资源CDN配置需要根据实际项目资源进行配置",
+    "图片资源建议使用CDN加速，特别是大图片",
+    "字体文件建议使用CDN加速，减少服务器负载",
+    "所有CDN资源必须使用SRI校验",
+    "建议配置多个CDN备选，确保资源可用性",
+    "CDN URL配置示例：",
+    "  - jsDelivr: https://cdn.jsdelivr.net/gh/user/repo@main/path/to/file",
+    "  - GitHub Raw: https://raw.githubusercontent.com/user/repo/main/path/to/file",
+    "  - 自定义CDN: 根据实际CDN服务商配置"
+  ]
+}

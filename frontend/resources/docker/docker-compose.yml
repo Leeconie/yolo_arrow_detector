@@ -1,0 +1,56 @@
+# Docker Compose配置文件
+# 用于本地开发和测试环境
+
+version: '3.8'
+
+services:
+  # 前端应用服务
+  frontend:
+    build:
+      context: ../..
+      dockerfile: resources/docker/nginx/Dockerfile
+    container_name: aimeasurearchery-frontend
+    ports:
+      - "8080:80"
+    environment:
+      - NGINX_PORT=80
+      - NGINX_SERVER_NAME=localhost
+      - STATIC_CACHE_EXPIRES=1y
+      # CDN配置：默认不使用CDN，所有资源都打包到构建产物中
+      # 如需使用CDN，请参考 resources/cdn/README.md
+      - USE_CDN=false
+    volumes:
+      # 挂载构建产物（开发时使用，生产环境不需要）
+      # - ../../dist:/usr/share/nginx/html:ro
+      # 挂载Nginx配置（可选，用于调试）
+      # - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      # 挂载日志目录
+      - nginx-logs:/var/log/nginx
+    networks:
+      - frontend-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost/health"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 5s
+    # 资源限制
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 512M
+        reservations:
+          cpus: '0.5'
+          memory: 256M
+
+# 网络配置
+networks:
+  frontend-network:
+    driver: bridge
+
+# 卷配置
+volumes:
+  nginx-logs:
+    driver: local

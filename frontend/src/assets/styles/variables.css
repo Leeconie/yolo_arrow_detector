@@ -1,0 +1,87 @@
+/**
+ * CSS变量定义
+ * 定义系统的CSS变量，包括颜色、尺寸、字体、间距等
+ */
+
+/* 字体变量定义 */
+:root {
+  /* 字体族 */
+  --font-family-base:
+    'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial,
+    sans-serif;
+  --font-family-mono: 'Courier New', Courier, monospace;
+
+  /* 字体大小 */
+  --font-size-extra-large: 20px;
+  --font-size-large: 18px;
+  --font-size-base: 14px;
+  --font-size-small: 13px;
+  --font-size-extra-small: 12px;
+
+  /* 字体字重 */
+  --font-weight-normal: 400;
+  --font-weight-medium: 500;
+  --font-weight-bold: 700;
+
+  /* 颜色变量 */
+  --color-primary: #409eff;
+  --color-success: #67c23a;
+  --color-warning: #e6a23c;
+  --color-danger: #f56c6c;
+  --color-info: #909399;
+
+  /* 文本颜色 */
+  --color-text-primary: #303133;
+  --color-text-regular: #606266;
+  --color-text-secondary: #909399;
+  --color-text-placeholder: #c0c4cc;
+
+  /* 背景颜色 */
+  --color-bg-primary: #ffffff;
+  --color-bg-secondary: #f5f7fa;
+  --color-bg-tertiary: #ebeef5;
+
+  /* 边框颜色 */
+  --color-border-base: #dcdfe6;
+  --color-border-light: #e4e7ed;
+  --color-border-lighter: #ebeef5;
+  --color-border-extra-light: #f2f6fc;
+
+  /* 尺寸变量 */
+
+  /* 间距变量 */
+  --spacing-xs: 4px;
+  --spacing-sm: 8px;
+  --spacing-md: 16px;
+  --spacing-lg: 24px;
+  --spacing-xl: 32px;
+
+  /* 圆角变量 */
+  --border-radius-base: 4px;
+  --border-radius-small: 2px;
+  --border-radius-large: 8px;
+  --border-radius-round: 20px;
+  --border-radius-circle: 100%;
+
+  /* 阴影变量 */
+  --box-shadow-base: 0 2px 4px rgba(0, 0, 0, 0.12), 0 0 6px rgba(0, 0, 0, 0.04);
+  --box-shadow-light: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
+  --box-shadow-dark: 0 2px 4px rgba(0, 0, 0, 0.12), 0 0 6px rgba(0, 0, 0, 0.12);
+}
+
+/* 暗色主题变量 */
+.dark {
+  --color-text-primary: #e5eaf3;
+  --color-text-regular: #cfd3dc;
+  --color-text-secondary: #a3a6ad;
+  --color-text-placeholder: #6c6e72;
+
+  --color-bg-primary: #1d1e1f;
+  --color-bg-secondary: #252526;
+  --color-bg-tertiary: #2d2d30;
+
+  --color-border-base: #3c3c3c;
+  --color-border-light: #404040;
+  --color-border-lighter: #4a4a4a;
+  --color-border-extra-light: #505050;
+}

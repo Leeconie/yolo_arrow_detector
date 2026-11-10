@@ -1,0 +1,43 @@
+# Docker构建忽略文件
+# 排除不需要复制到Docker镜像中的文件和目录
+
+# 依赖目录
+node_modules
+.pnpm-store
+
+# 构建产物
+dist
+build
+coverage
+
+# 测试相关
+test-results
+playwright-report
+*.log
+
+# 开发工具
+.vscode
+.idea
+*.swp
+*.swo
+*~
+
+# Git相关
+.git
+.gitignore
+.gitattributes
+
+# 文档
+doc
+README.md
+*.md
+
+# 配置文件（保留必要的）
+.env.local
+.env.*.local
+
+# 其他
+.DS_Store
+Thumbs.db
+*.tmp
+*.temp

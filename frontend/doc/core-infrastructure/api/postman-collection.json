@@ -1,0 +1,256 @@
+{
+  "info": {
+    "name": "核心基础设施模块 API",
+    "description": "核心基础设施模块提供统一的HTTP请求封装，包括请求拦截、响应拦截、错误处理、性能优化等功能。",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_exporter_id": "core-infrastructure-api"
+  },
+  "item": [
+    {
+      "name": "GET请求",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}",
+            "type": "text"
+          },
+          {
+            "key": "X-CSRF-Token",
+            "value": "{{csrfToken}}",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/user/info?id=1",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "user", "info"],
+          "query": [
+            {
+              "key": "id",
+              "value": "1",
+              "description": "用户ID"
+            }
+          ]
+        },
+        "description": "发送GET请求，支持查询参数。GET请求默认启用缓存，可通过skipCache配置跳过缓存。"
+      },
+      "response": []
+    },
+    {
+      "name": "GET请求（跳过缓存）",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}",
+            "type": "text"
+          },
+          {
+            "key": "X-CSRF-Token",
+            "value": "{{csrfToken}}",
+            "type": "text"
+          },
+          {
+            "key": "X-Skip-Cache",
+            "value": "true",
+            "type": "text",
+            "description": "跳过缓存，强制刷新"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/user/info?id=1",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "user", "info"],
+          "query": [
+            {
+              "key": "id",
+              "value": "1"
+            }
+          ]
+        },
+        "description": "发送GET请求并跳过缓存，强制从服务器获取最新数据。"
+      },
+      "response": []
+    },
+    {
+      "name": "POST请求",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}",
+            "type": "text"
+          },
+          {
+            "key": "X-CSRF-Token",
+            "value": "{{csrfToken}}",
+            "type": "text"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"name\": \"John\",\n  \"email\": \"john@example.com\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/user",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "user"]
+        },
+        "description": "发送POST请求，支持请求体数据。POST请求会自动添加CSRF Token。"
+      },
+      "response": []
+    },
+    {
+      "name": "POST请求（高优先级）",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}",
+            "type": "text"
+          },
+          {
+            "key": "X-CSRF-Token",
+            "value": "{{csrfToken}}",
+            "type": "text"
+          },
+          {
+            "key": "X-Priority",
+            "value": "1",
+            "type": "text",
+            "description": "1=高优先级，2=普通优先级"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"name\": \"John\",\n  \"email\": \"john@example.com\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/user",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "user"]
+        },
+        "description": "发送高优先级POST请求，优先处理。适用于登录、支付等关键操作。"
+      },
+      "response": []
+    },
+    {
+      "name": "PUT请求",
+      "request": {
+        "method": "PUT",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}",
+            "type": "text"
+          },
+          {
+            "key": "X-CSRF-Token",
+            "value": "{{csrfToken}}",
+            "type": "text"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"name\": \"John Updated\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/user/1",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "user", "1"]
+        },
+        "description": "发送PUT请求，用于更新资源。PUT请求会自动添加CSRF Token。"
+      },
+      "response": []
+    },
+    {
+      "name": "DELETE请求",
+      "request": {
+        "method": "DELETE",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}",
+            "type": "text"
+          },
+          {
+            "key": "X-CSRF-Token",
+            "value": "{{csrfToken}}",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/user/1",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "user", "1"]
+        },
+        "description": "发送DELETE请求，用于删除资源。DELETE请求会自动添加CSRF Token。"
+      },
+      "response": []
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8080",
+      "type": "string"
+    },
+    {
+      "key": "token",
+      "value": "",
+      "type": "string",
+      "description": "Bearer Token，从登录接口获取"
+    },
+    {
+      "key": "csrfToken",
+      "value": "",
+      "type": "string",
+      "description": "CSRF Token，自动生成"
+    }
+  ],
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{token}}",
+        "type": "string"
+      }
+    ]
+  }
+}

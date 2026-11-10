@@ -1,0 +1,31 @@
+# ============================================================
+# yolo_arrow_detector 依赖清单
+# 依据：main.py 与 models/video_processor.py 的实际 import
+# 建议 Python 3.9 ~ 3.12（torch 对 3.13 支持尚不完整）
+# ============================================================
+
+# --- Web 服务（main.py: fastapi / uvicorn）---
+fastapi>=0.110,<1.0
+uvicorn[standard]>=0.27,<1.0
+# FastAPI 的 File / UploadFile 依赖此包，缺失会直接启动报错
+python-multipart>=0.0.9
+
+# --- 图像与数值（video_processor.py: cv2 / numpy）---
+opencv-python>=4.8,<5.0
+numpy>=1.24,<2.0
+
+# --- 检测模型（video_processor.py: ultralytics.YOLO）---
+# 会自动带入 torch / torchvision（PyPI 默认 CPU 版）
+ultralytics>=8.0.200,<9.0.0
+
+# ------------------------------------------------------------
+# 说明：
+# 1. 上面用的是兼容区间而非精确版本，因为本机未找到该项目的运行环境，
+#    无法用 pip freeze 提取。若需要可复现安装，请在能跑通的环境执行：
+#        pip freeze > requirements.lock.txt
+# 2. 若要启用 GPU 推理，torch 需按 CUDA 版本单独安装，例如：
+#        pip install torch torchvision --index-url https://download.pytorch.org/whl/cu118
+#    装完再装本文件其余依赖，避免被 PyPI 的 CPU 版覆盖。
+# 3. numpy 压在 2.0 以下，是因为 ultralytics 8.0 ~ 8.1 系列与 numpy 2.x
+#    存在兼容问题（np.float_ 等符号移除）。
+# ------------------------------------------------------------

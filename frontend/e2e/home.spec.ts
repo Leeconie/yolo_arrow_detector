@@ -1,0 +1,152 @@
+/**
+ * @fileoverview 首页功能E2E测试
+ * @module e2e/home
+ * @description 测试首页相关功能
+ */
+
+import { test, expect } from '@playwright/test'
+
+test.describe('首页功能', () => {
+  test.beforeEach(async ({ page }) => {
+    // 先登录
+    await page.goto('/login')
+    await page.waitForLoadState('domcontentloaded')
+
+    // 等待登录表单加载
+    await expect(page.locator('input[placeholder="请输入用户名"]')).toBeVisible()
+    await expect(page.locator('input[placeholder="请输入密码"]')).toBeVisible()
+
+    // 填写登录信息
+    await page.locator('input[placeholder="请输入用户名"]').fill('zhangsan')
+    await page.locator('input[placeholder="请输入密码"]').fill('123456')
+
+    // 点击登录按钮
+    const loginButton = page.getByRole('button', { name: '登录' })
+    await expect(loginButton).toBeVisible()
+    await loginButton.click()
+
+    // 等待登录成功并跳转到首页
+    await page.waitForURL('**/home', { timeout: 10000 })
+
+    // 确保页面已加载
+    await page.waitForLoadState('domcontentloaded')
+    await expect(page.locator('body')).toBeVisible()
+  })
+
+  test('应该显示首页内容', async ({ page }) => {
+    await page.goto('/home')
+    await page.waitForLoadState('domcontentloaded')
+
+    // 验证URL
+    expect(page.url()).toContain('/home')
+
+    // 等待页面内容加载
+    await expect(page.locator('body')).toBeVisible()
+
+    // 验证页面有内容（使用toHaveText检查页面包含文本）
+    const pageContent = page.locator('body')
+    await expect(pageContent).toHaveText(/.+/, { timeout: 5000 }) // 至少包含一个字符
+  })
+
+  test('应该能够点击所有导航按钮', async ({ page }) => {
+    // 确保在首页（验证URL）
+    expect(page.url()).toContain('/home')
+
+    // 等待页面完全加载（包括API调用和Vue渲染）
+    await expect(page.locator('body')).toBeVisible()
+
+    // 等待页面内容加载（验证页面有内容）
+    const pageContent = page.locator('body')
+    await expect(pageContent).toHaveText(/.+/, { timeout: 5000 }) // 至少包含一个字符
+
+    // 直接等待导航按钮出现（使用Playwright推荐的locator方法）
+    // 等待按钮完全渲染和可交互
+    // Element Plus按钮可能需要额外时间渲染
+    const buttonLocator = page.locator('button').first()
+    await expect(buttonLocator).toBeVisible({ timeout: 20000 })
+
+    // 使用locator查找按钮（Element Plus按钮可能无法被getByRole识别）
+    const homeButton = page.locator('button:has-text("首页")').first()
+    await expect(homeButton).toBeVisible({ timeout: 20000 })
+    // 确保按钮可交互
+    await expect(homeButton).toBeEnabled({ timeout: 5000 })
+
+    // 测试：点击"首页"按钮
+    await homeButton.click()
+    await page.waitForURL('**/home', { timeout: 3000 })
+    expect(page.url()).toContain('/home')
+
+    // 等待按钮重新出现（因为页面可能重新渲染）
+    await expect(homeButton).toBeVisible({ timeout: 5000 })
+
+    // 测试：点击"射箭分析"按钮
+    const archeryButton = page.locator('button:has-text("射箭分析")').first()
+    await expect(archeryButton).toBeVisible({ timeout: 15000 })
+    await expect(archeryButton).toBeEnabled({ timeout: 5000 })
+    await archeryButton.click()
+    await page.waitForURL('**/archery', { timeout: 3000 })
+    expect(page.url()).toContain('/archery')
+
+    // 返回首页
+    await page.goto('/home')
+    await page.waitForLoadState('domcontentloaded')
+
+    // 等待按钮重新出现
+    await expect(homeButton).toBeVisible({ timeout: 15000 })
+
+    // 测试：点击"个人中心"按钮
+    const profileButton = page.locator('button:has-text("个人中心")').first()
+    await expect(profileButton).toBeVisible({ timeout: 15000 })
+    await profileButton.click()
+    await page.waitForURL('**/profile', { timeout: 3000 })
+    expect(page.url()).toContain('/profile')
+
+    // 返回首页
+    await page.goto('/home')
+    await page.waitForLoadState('domcontentloaded')
+
+    // 等待按钮重新出现
+    await expect(homeButton).toBeVisible({ timeout: 15000 })
+
+    // 测试：点击"退出登录"按钮
+    const logoutButton = page.locator('button:has-text("退出登录")').first()
+    await expect(logoutButton).toBeVisible({ timeout: 15000 })
+    await expect(logoutButton).toBeEnabled({ timeout: 5000 })
+
+    // Element Plus的ElMessageBox.confirm不是标准的浏览器dialog
+    // 需要等待对话框出现，然后点击确定按钮
+    await logoutButton.click()
+
+    // 等待确认对话框出现
+    const confirmDialog = page.locator('.el-message-box').filter({ hasText: '确定要退出登录吗？' })
+    await expect(confirmDialog).toBeVisible({ timeout: 5000 })
+
+    // 点击确定按钮
+    const confirmButton = confirmDialog.locator('button:has-text("确定")')
+    await expect(confirmButton).toBeVisible()
+    await confirmButton.click()
+
+    // 等待退出登录并跳转到登录页
+    await page.waitForURL('**/login', { timeout: 10000 })
+    expect(page.url()).toContain('/login')
+  })
+
+  test('页面应该能够正常加载', async ({ page }) => {
+    await page.goto('/home')
+    await page.waitForLoadState('domcontentloaded')
+
+    // 检查页面是否有JavaScript错误
+    const errors: string[] = []
+    page.on('pageerror', (error) => {
+      errors.push(error.message)
+    })
+
+    await expect(page.locator('body')).toBeVisible()
+
+    // 如果有严重错误，测试应该失败
+    const criticalErrors = errors.filter(
+      (e) => !e.includes('ResizeObserver') && !e.includes('Non-Error promise rejection'),
+    )
+    expect(criticalErrors.length).toBe(0)
+  })
+})

@@ -1,0 +1,51 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+dist/
+*.egg-info/
+.eggs/
+
+# 虚拟环境
+.venv/
+venv/
+env/
+ENV/
+
+# IDE / 编辑器
+.vscode/
+.idea/
+*.swp
+*~
+
+# 系统文件
+.DS_Store
+Thumbs.db
+
+# 运行产物 / 临时文件
+*.log
+logs/
+outputs/
+output/
+temp/
+tmp/
+*_result.mp4
+*_processed.mp4
+inference_out/
+runs/
+
+# 数据集（体积大，不入库）
+datasets/
+data/
+*.mp4
+*.avi
+*.mov
+*.mkv
+
+# 环境变量与密钥
+.env
+.env.*
+!.env.example

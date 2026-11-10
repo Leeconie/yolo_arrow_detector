@@ -1,0 +1,80 @@
+name: E2E Tests
+
+on:
+  push:
+    branches: ['main', 'develop', 'feature/**']
+  pull_request:
+    branches: ['main', 'develop']
+
+jobs:
+  test-e2e:
+    timeout-minutes: 30
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node-version: [20.x]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: 10
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Install Playwright browsers
+        run: pnpm exec playwright install --with-deps chromium
+
+      - name: Build application (optional)
+        run: pnpm build || echo "No build step defined"
+
+      - name: Start development server
+        run: |
+          pnpm dev &
+          echo "Waiting for dev server to be ready..."
+          npx wait-on http://localhost:4000 -t 120000
+
+      - name: Start mock upload server
+        run: |
+          node scripts/mock-upload-server.js &
+          echo "Waiting for mock server to be ready..."
+          npx wait-on http://localhost:3001/health -t 30000
+
+      - name: Run E2E tests (Chromium)
+        run: pnpm test:e2e video-uploader-ui --project=chromium
+        env:
+          CI: true
+
+      - name: Upload Playwright report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 7
+
+      - name: Upload test results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: test-results
+          path: test-results/
+          retention-days: 7
+
+      - name: Upload screenshots
+        uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: failure-screenshots
+          path: test-results/**/*.png
+          retention-days: 7

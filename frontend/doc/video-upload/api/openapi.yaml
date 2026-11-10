@@ -1,0 +1,357 @@
+openapi: 3.0.3
+info:
+  title: 视频上传模块 API 文档
+  description: |
+    视频上传模块提供视频文件上传、格式校验、类型选择等功能。
+    
+    ## 功能特性
+    
+    - 支持分片上传，分片大小为5MB
+    - 支持断点续传
+    - 支持上传进度实时展示
+    - 支持视频格式和大小校验
+    - 支持视频类型选择（运动人体视频/射箭视频）
+    
+    ## 认证方式
+    
+    所有API请求都需要在请求头中携带Bearer Token：
+    
+    ```
+    Authorization: Bearer <token>
+    ```
+  version: 1.0.0
+  contact:
+    name: 开发团队
+    email: dev@example.com
+
+servers:
+  - url: /api
+    description: API基础路径
+
+tags:
+  - name: 视频上传
+    description: 视频文件上传相关接口
+  - name: 视频校验
+    description: 视频文件校验相关接口
+  - name: 视频类型
+    description: 视频类型选择相关接口
+
+paths:
+  /video/upload:
+    post:
+      tags:
+        - 视频上传
+      summary: 分片上传视频文件
+      description: |
+        上传视频文件的分片。支持分片上传和断点续传。
+        
+        ## 使用示例
+        
+        ```typescript
+        import { post } from '@/core/api'
+        
+        const formData = new FormData()
+        formData.append('file', chunkFile)
+        formData.append('videoId', videoId)
+        formData.append('chunkIndex', chunkIndex.toString())
+        formData.append('totalChunks', totalChunks.toString())
+        
+        const result = await post<UploadResponse>('/video/upload', formData, {
+          headers: {
+            'Content-Type': 'multipart/form-data'
+          }
+        })
+        ```
+      operationId: uploadVideoChunk
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - file
+                - videoId
+                - chunkIndex
+                - totalChunks
+              properties:
+                file:
+                  type: string
+                  format: binary
+                  description: 视频文件分片
+                videoId:
+                  type: string
+                  description: 视频ID
+                  example: "video_123456"
+                chunkIndex:
+                  type: integer
+                  description: 当前分片索引（从0开始）
+                  example: 0
+                totalChunks:
+                  type: integer
+                  description: 总分片数
+                  example: 10
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: 上传成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UploadResponse'
+              examples:
+                success:
+                  value:
+                    code: 200
+                    message: 上传成功
+                    data:
+                      chunkIndex: 0
+                      uploaded: true
+                      videoId: "video_123456"
+        '400':
+          description: 请求参数错误
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/ServerError'
+  
+  /video/validate:
+    post:
+      tags:
+        - 视频校验
+      summary: 校验视频文件
+      description: |
+        校验视频文件的格式、大小等信息。
+        
+        ## 使用示例
+        
+        ```typescript
+        import { post } from '@/core/api'
+        
+        const result = await post<ValidateResponse>('/video/validate', {
+          fileName: 'video.mp4',
+          fileSize: 104857600,
+          fileType: 'video/mp4'
+        })
+        ```
+      operationId: validateVideo
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ValidateRequest'
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: 校验结果
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidateResponse'
+              examples:
+                valid:
+                  value:
+                    code: 200
+                    message: 校验通过
+                    data:
+                      valid: true
+                      message: "文件格式正确"
+                invalid:
+                  value:
+                    code: 200
+                    message: 校验失败
+                    data:
+                      valid: false
+                      message: "文件格式不支持，仅支持mp4、avi、mov格式"
+        '400':
+          description: 请求参数错误
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/ServerError'
+  
+  /video/saveType:
+    post:
+      tags:
+        - 视频类型
+      summary: 保存视频类型
+      description: |
+        保存视频的分析类型（运动人体视频/射箭视频）。
+        
+        ## 使用示例
+        
+        ```typescript
+        import { post } from '@/core/api'
+        
+        const result = await post<SaveTypeResponse>('/video/saveType', {
+          videoId: 'video_123456',
+          videoType: 'human' // 或 'archery'
+        })
+        ```
+      operationId: saveVideoType
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SaveTypeRequest'
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: 保存成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SaveTypeResponse'
+              examples:
+                success:
+                  value:
+                    code: 200
+                    message: 保存成功
+                    data:
+                      success: true
+        '400':
+          description: 请求参数错误
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Bearer Token认证
+  
+  schemas:
+    UploadResponse:
+      type: object
+      description: 上传响应
+      properties:
+        chunkIndex:
+          type: integer
+          description: 已上传的分片索引
+          example: 0
+        uploaded:
+          type: boolean
+          description: 是否上传成功
+          example: true
+        videoId:
+          type: string
+          description: 视频ID
+          example: "video_123456"
+    
+    ValidateRequest:
+      type: object
+      required:
+        - fileName
+        - fileSize
+        - fileType
+      properties:
+        fileName:
+          type: string
+          description: 文件名
+          example: "video.mp4"
+        fileSize:
+          type: integer
+          description: 文件大小（字节）
+          example: 104857600
+        fileType:
+          type: string
+          description: 文件MIME类型
+          example: "video/mp4"
+    
+    ValidateResponse:
+      type: object
+      description: 校验响应
+      properties:
+        valid:
+          type: boolean
+          description: 是否校验通过
+          example: true
+        message:
+          type: string
+          description: 校验消息
+          example: "文件格式正确"
+    
+    SaveTypeRequest:
+      type: object
+      required:
+        - videoId
+        - videoType
+      properties:
+        videoId:
+          type: string
+          description: 视频ID
+          example: "video_123456"
+        videoType:
+          type: string
+          enum:
+            - human
+            - archery
+          description: 视频类型，human表示运动人体视频，archery表示射箭视频
+          example: "human"
+    
+    SaveTypeResponse:
+      type: object
+      description: 保存类型响应
+      properties:
+        success:
+          type: boolean
+          description: 是否保存成功
+          example: true
+    
+    ApiError:
+      type: object
+      description: API错误响应
+      required:
+        - code
+        - message
+      properties:
+        code:
+          type: integer
+          description: 错误码
+          example: 400
+        message:
+          type: string
+          description: 错误消息
+          example: Bad Request
+  
+  responses:
+    Unauthorized:
+      description: 未授权，Token无效或已过期
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiError'
+          example:
+            code: 401
+            message: 登录已过期，请重新登录
+    
+    ServerError:
+      description: 服务器内部错误
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiError'
+          example:
+            code: 500
+            message: 服务器内部错误

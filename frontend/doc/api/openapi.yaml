@@ -1,0 +1,1574 @@
+openapi: 3.0.3
+info:
+  title: AI射箭测量系统 API 文档
+  description: |
+    AI射箭测量系统提供用户管理、射箭分析等功能的完整API接口。
+
+    ## 认证方式
+
+    所有需要认证的API请求都需要在请求头中携带Bearer Token：
+
+    ```
+    Authorization: Bearer <token>
+    ```
+
+    Token通过请求拦截器自动添加到请求头中，无需手动设置。
+
+    ## 响应格式
+
+    所有API响应都遵循统一的格式：
+
+    ```json
+    {
+      "code": 200,
+      "message": "Success",
+      "data": {},
+      "timestamp": 1234567890
+    }
+    ```
+
+    - `code`: 业务状态码，200表示成功
+    - `message`: 响应消息
+    - `data`: 响应数据
+    - `timestamp`: 时间戳（可选）
+
+    ## 错误处理
+
+    当业务状态码不为200时，响应拦截器会自动处理错误：
+    - 401: 未授权，自动跳转登录页
+    - 403: 无权限，显示权限不足提示
+    - 其他错误: 显示错误消息
+
+    ## 日志记录
+
+    系统提供统一的日志记录模块，所有API操作都会自动记录日志：
+
+    ### 日志级别
+
+    - **DEBUG**: 调试信息，记录详细的请求/响应信息（开发环境）
+    - **INFO**: 一般信息，记录关键操作（如用户登录、注册）
+    - **WARN**: 警告信息，记录业务错误（如API返回非200状态码）
+    - **ERROR**: 错误信息，记录网络错误、配置错误等
+    - **FATAL**: 致命错误，记录导致系统无法继续运行的严重错误
+
+    ### 日志内容
+
+    每条日志包含以下信息：
+    - **时间戳**: ISO 8601格式的时间戳
+    - **日志级别**: DEBUG/INFO/WARN/ERROR/FATAL
+    - **模块名称**: 标识日志来源模块（如 `api`、`video.upload`）
+    - **功能名称**: 标识具体功能（如 `userLogin`、`uploadVideoChunk`）
+    - **请求ID**: 用于关联同一请求的多个日志
+    - **日志消息**: 描述性的日志消息
+    - **上下文数据**: 相关的业务数据（自动脱敏敏感信息）
+
+    ### 敏感信息保护
+
+    日志模块自动对敏感信息进行脱敏处理：
+    - 密码、Token等敏感字段会被自动脱敏
+    - 手机号、邮箱等个人信息会被部分脱敏
+    - 确保日志中不会泄露用户敏感信息
+
+    ### 环境配置
+
+    日志行为可通过环境变量配置：
+    - **VITE_LOG_LEVEL**: 日志级别（DEBUG/INFO/WARN/ERROR/FATAL）
+    - **VITE_LOG_ENABLED**: 是否启用日志（true/false）
+    - **VITE_LOG_ENABLE_MASKING**: 是否启用敏感信息脱敏（true/false）
+    - **VITE_LOG_TARGETS**: 日志输出目标（console/remote/file/custom）
+
+    详细配置说明请参考 [环境变量配置指南](./env-config-guide.md)。
+
+    ## Mock服务配置
+
+    ### 概述
+
+    项目支持使用 Apifox Mock 服务进行接口模拟，**仅在开发环境和测试环境启用**，生产环境强制禁用。
+
+    Mock服务支持两种模式：
+    - **云端Mock**：部署在 Apifox 服务器上，无需本地Apifox客户端运行
+    - **本地Mock**：与Apifox客户端一起安装的本地服务器，需要Apifox客户端运行
+
+    参考文档：
+    - [Apifox Mock 文档](https://docs.apifox.com/mock)
+    - [Apifox 云端 Mock 文档](https://docs.apifox.com/cloud-mock)
+    - [Apifox 智能 Mock 文档](https://docs.apifox.com/smart-mock)
+
+    ### 环境变量配置
+
+    在`.env`文件中配置以下环境变量：
+
+    ```bash
+    # ==================== Mock服务基础配置 ====================
+    # 是否启用Mock服务（仅在开发/测试环境有效，生产环境强制禁用）
+    # 可选值：true | false
+    # 默认值：开发/测试环境为true，生产环境为false
+    VITE_ENABLE_MOCK=true
+
+    # Mock服务类型：cloud（云端）或 local（本地）
+    # 可选值：cloud | local
+    # 默认值：cloud
+    VITE_APIFOX_MOCK_TYPE=cloud
+
+    # ==================== 云端Mock配置 ====================
+    # 云端Mock服务基础URL
+    # 格式：https://mock.apifox.cn/m1/{项目ID}-{版本编号}-{服务编号}
+    # 或：https://m1.apifoxmock.com/m1/{项目ID}-{版本编号}-{服务编号}
+    # 默认值：https://m1.apifoxmock.com/m1/7676691-7418764-6917011
+    VITE_APIFOX_MOCK_CLOUD_URL=https://m1.apifoxmock.com/m1/7676691-7418764-6917011
+
+    # 云端Mock Token（仅在启用Token鉴权时需要）
+    # 从Apifox项目设置中获取
+    VITE_APIFOX_TOKEN=your_token_here
+
+    # 是否启用云端Mock Token鉴权
+    # 可选值：true | false
+    # 默认值：false（关闭Token鉴权）
+    VITE_ENABLE_MOCK_TOKEN_AUTH=false
+
+    # ==================== 本地Mock配置 ====================
+    # 本地Mock服务基础URL
+    # 格式：http://127.0.0.1:4523/m1/{项目ID}-{版本编号}-{服务编号}
+    # 默认值：http://127.0.0.1:4523/m1/7676691-7418764-6917011
+    # 注意：本地Mock需要Apifox客户端运行
+    VITE_APIFOX_MOCK_LOCAL_URL=http://127.0.0.1:4523/m1/7676691-7418764-6917011
+
+    # ==================== 生产环境API配置 ====================
+    # 生产环境API基础URL（Mock服务禁用时使用）
+    VITE_API_BASE_URL=/api
+    ```
+
+    ### 环境说明
+
+    | 环境 | Mock服务 | 说明 |
+    |------|---------|------|
+    | 开发环境 (development) | 默认启用 | 支持云端/本地切换，用于前端开发 |
+    | 测试环境 (test) | 默认启用 | 支持云端/本地切换，用于接口测试 |
+    | 生产环境 (production) | 强制禁用 | 使用实际后端API，不启用Mock服务 |
+
+    ### Mock服务地址
+
+    #### 云端Mock地址
+
+    - **路径模式**：`https://mock.apifox.cn/m1/{项目ID}-{版本编号}-{服务编号}/{接口路径}`
+    - **ID模式**：`https://mock.apifox.cn/m2/{项目ID}-{版本编号}-{服务编号}/{接口ID}`
+    - **当前项目地址**：`https://m1.apifoxmock.com/m1/7676691-7418764-6917011`
+
+    #### 本地Mock地址
+
+    - **路径模式**：`http://127.0.0.1:4523/m1/{项目ID}-{版本编号}-{服务编号}/{接口路径}`
+    - **ID模式**：`http://127.0.0.1:4523/m2/{项目ID}-{版本编号}-{服务编号}/{接口ID}`
+    - **当前项目地址**：`http://127.0.0.1:4523/m1/7676691-7418764-6917011`
+
+    **注意**：
+    - 本地Mock需要Apifox客户端运行
+    - 如需其他设备访问，将IP替换为本机局域网地址
+    - 检查防火墙或端口`4523`是否被拦截
+
+    ### Token鉴权配置
+
+    根据 [Apifox 云端 Mock 文档](https://docs.apifox.com/cloud-mock)，Token鉴权**仅适用于云端Mock**，本地Mock不需要Token。
+
+    #### 配置步骤
+
+    1. **在Apifox中配置Token鉴权**：
+       - 进入 "项目设置 -> 功能设置 -> Mock 设置"
+       - 将访问权限设置为 "Token 鉴权" 或 "无鉴权"
+
+    2. **在环境变量中配置**：
+       ```bash
+       # 启用Token鉴权
+       VITE_ENABLE_MOCK_TOKEN_AUTH=true
+       
+       # 配置Token（从Apifox项目设置中获取）
+       VITE_APIFOX_TOKEN=your_token_here
+       ```
+
+    #### 使用说明
+
+    - **关闭Token鉴权（默认）**：设置 `VITE_ENABLE_MOCK_TOKEN_AUTH=false` 或不设置
+    - **开启Token鉴权**：设置 `VITE_ENABLE_MOCK_TOKEN_AUTH=true` 并配置 `VITE_APIFOX_TOKEN`
+    - **本地Mock**：不需要Token，Token鉴权配置无效
+
+    ### 使用场景
+
+    #### 开发环境
+
+    - **使用Mock服务**：前端开发时，后端接口尚未开发完成
+    - **测试后端API**：设置 `VITE_ENABLE_MOCK=false`，直接调用后端API进行联调
+    - **切换Mock类型**：通过 `VITE_APIFOX_MOCK_TYPE` 在云端/本地之间切换
+
+    #### 测试环境
+
+    - **使用Mock服务**：自动化测试时，使用Mock数据作为数据源
+    - **测试数据隔离**：避免使用生产数据，确保测试环境数据安全
+
+    #### 生产环境
+
+    - **强制禁用Mock**：生产环境不允许使用Mock服务
+    - **使用实际API**：所有请求直接调用生产环境后端API
+  version: 1.0.0
+  contact:
+    name: 开发团队
+    email: dev@example.com
+
+servers:
+  - url: /api
+    description: 生产环境API基础路径
+  - url: https://m1.apifoxmock.com/m1/7676691-7418764-6917011
+    description: Apifox云端Mock服务（开发/测试环境）
+  - url: http://127.0.0.1:4523/m1/7676691-7418764-6917011
+    description: Apifox本地Mock服务（开发/测试环境，需要Apifox客户端运行）
+
+tags:
+  - name: 用户管理
+    description: 用户注册、登录、信息管理等接口
+  - name: 认证授权
+    description: Token刷新等认证相关接口
+  - name: 射箭分析
+    description: 射箭分析相关接口，包括视频上传、统计分析等
+  - name: 视频上传
+    description: 视频文件上传、校验、类型管理等接口
+
+paths:
+  # ==================== 用户管理相关接口 ====================
+  /user/register:
+    post:
+      tags:
+        - 用户管理
+      summary: 用户注册
+      description: |
+        新用户注册接口，创建新用户账号。
+
+        ## 使用示例
+
+        ```typescript
+        import { userRegister } from '@/core/api/user'
+
+        const result = await userRegister({
+          nickname: '张三',
+          username: 'zhangsan',
+          password: 'password123'
+        })
+        ```
+      operationId: userRegister
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterRequest'
+            example:
+              nickname: 张三
+              username: zhangsan
+              password: password123
+              email: zhangsan@example.com
+              phone: 13800138000
+      responses:
+        '200':
+          description: 注册成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+                properties:
+                  data:
+                    $ref: '#/components/schemas/RegisterResponse'
+              example:
+                code: 200
+                message: 注册成功
+                data:
+                  accessToken: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+                  refreshToken: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+                  expiresIn: 3600
+                  userInfo:
+                    id: 1
+                    username: zhangsan
+                    nickname: 张三
+                    email: zhangsan@example.com
+                    phone: 13800138000
+                    avatar: https://example.com/avatar.jpg
+                    roles: [user]
+                    createdAt: 2024-01-01T00:00:00Z
+                timestamp: 1704067200
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '409':
+          description: 用户名已存在
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                code: 409
+                message: 用户名已存在
+                data: null
+
+  /user/login:
+    post:
+      tags:
+        - 用户管理
+      summary: 用户登录
+      description: |
+        用户登录接口，验证用户身份并返回认证token。
+
+        ## 使用示例
+
+        ```typescript
+        import { userLogin } from '@/core/api/user'
+
+        const result = await userLogin({
+          username: 'zhangsan',
+          password: 'password123'
+        })
+        ```
+      operationId: userLogin
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+            example:
+              username: zhangsan
+              password: password123
+              captcha: 1234
+      responses:
+        '200':
+          description: 登录成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+                properties:
+                  data:
+                    $ref: '#/components/schemas/LoginResponse'
+              example:
+                code: 200
+                message: 登录成功
+                data:
+                  accessToken: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+                  refreshToken: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+                  expiresIn: 3600
+                  userInfo:
+                    id: 1
+                    username: zhangsan
+                    nickname: 张三
+                    email: zhangsan@example.com
+                    phone: 13800138000
+                    avatar: https://example.com/avatar.jpg
+                    roles: [user]
+                    createdAt: 2024-01-01T00:00:00Z
+                timestamp: 1704067200
+        '401':
+          description: 用户名或密码错误
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                code: 401
+                message: 用户名或密码错误
+                data: null
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+  /user/info:
+    get:
+      tags:
+        - 用户管理
+      summary: 获取当前登录用户信息
+      description: |
+        根据请求头中的token获取当前登录用户的详细信息。
+
+        ## 使用示例
+
+        ```typescript
+        import { getUserInfo } from '@/core/api/user'
+
+        const userInfo = await getUserInfo()
+        ```
+      operationId: getUserInfo
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: 获取成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+                properties:
+                  data:
+                    $ref: '#/components/schemas/UserInfo'
+              example:
+                code: 200
+                message: 获取成功
+                data:
+                  id: 1
+                  username: zhangsan
+                  nickname: 张三
+                  email: zhangsan@example.com
+                  phone: 13800138000
+                  avatar: https://example.com/avatar.jpg
+                  roles: [user]
+                  gender: 男
+                  userAge: 25
+                  createdAt: 2024-01-01T00:00:00Z
+                  updatedAt: 2024-01-01T00:00:00Z
+                timestamp: 1704067200
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /user/logout:
+    post:
+      tags:
+        - 用户管理
+      summary: 用户退出登录
+      description: |
+        用户退出登录，清除服务端session。
+
+        ## 使用示例
+
+        ```typescript
+        import { userLogout } from '@/core/api/user'
+
+        await userLogout()
+        ```
+      operationId: userLogout
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: 退出成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+                properties:
+                  data:
+                    type: object
+              example:
+                code: 200
+                message: 退出成功
+                data: null
+                timestamp: 1704067200
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /user/update-pwd:
+    post:
+      tags:
+        - 用户管理
+      summary: 修改用户密码
+      description: |
+        修改当前登录用户的密码。
+
+        ## 使用示例
+
+        ```typescript
+        import { updateUserPwd } from '@/core/api/user'
+
+        await updateUserPwd({
+          oldPwd: 'oldpassword',
+          newPwd: 'newpassword'
+        })
+        ```
+      operationId: updateUserPwd
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - oldPwd
+                - newPwd
+              properties:
+                oldPwd:
+                  type: string
+                  description: 原密码
+                  example: oldpassword
+                newPwd:
+                  type: string
+                  description: 新密码（至少6位）
+                  minLength: 6
+                  example: newpassword
+            example:
+              oldPwd: oldpassword
+              newPwd: newpassword
+      responses:
+        '200':
+          description: 修改成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+                properties:
+                  data:
+                    type: object
+              example:
+                code: 200
+                message: 密码修改成功
+                data: null
+                timestamp: 1704067200
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '400':
+          description: 原密码错误或新密码不符合要求
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                code: 400
+                message: 原密码错误
+                data: null
+
+  /user/update-info:
+    post:
+      tags:
+        - 用户管理
+      summary: 更新用户基础信息
+      description: |
+        更新当前登录用户的基础信息，包括昵称、性别、手机号等。
+
+        ## 使用示例
+
+        ```typescript
+        import { updateUserInfo } from '@/core/api/user'
+
+        const updatedInfo = await updateUserInfo({
+          nickname: '新昵称',
+          gender: '男',
+          phone: '13800138000'
+        })
+        ```
+      operationId: updateUserInfo
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                nickname:
+                  type: string
+                  description: 昵称（2-10位）
+                  minLength: 2
+                  maxLength: 10
+                  example: 新昵称
+                gender:
+                  type: string
+                  description: 性别（男/女/保密）
+                  enum: [男, 女, 保密]
+                  example: 男
+                phone:
+                  type: string
+                  description: 手机号（11位）
+                  pattern: '^1[3-9]\d{9}$'
+                  example: 13800138000
+                avatar:
+                  type: string
+                  format: uri
+                  description: 头像URL
+                  example: https://example.com/avatar.jpg
+                userAge:
+                  type: integer
+                  description: 用户年龄
+                  minimum: 1
+                  maximum: 150
+                  example: 25
+            example:
+              nickname: 新昵称
+              gender: 男
+              phone: 13800138000
+              avatar: https://example.com/avatar.jpg
+              userAge: 25
+      responses:
+        '200':
+          description: 更新成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+                properties:
+                  data:
+                    $ref: '#/components/schemas/UserInfo'
+              example:
+                code: 200
+                message: 更新成功
+                data:
+                  id: 1
+                  username: zhangsan
+                  nickname: 新昵称
+                  email: zhangsan@example.com
+                  phone: 13800138000
+                  avatar: https://example.com/avatar.jpg
+                  roles: [user]
+                  gender: 男
+                  userAge: 25
+                  updatedAt: 2024-01-01T00:00:00Z
+                timestamp: 1704067200
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+  # ==================== 认证授权相关接口 ====================
+  /auth/refresh:
+    get:
+      tags:
+        - 认证授权
+      summary: 刷新Token
+      description: |
+        刷新访问令牌，获取新的Token。
+
+        ## 使用示例
+
+        ```typescript
+        import { refreshToken } from '@/core/api/token-refresh'
+
+        const newToken = await refreshToken()
+        ```
+      operationId: refreshToken
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: 刷新成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+                properties:
+                  data:
+                    $ref: '#/components/schemas/LoginResponse'
+              example:
+                code: 200
+                message: 刷新成功
+                data:
+                  accessToken: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+                  refreshToken: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+                  expiresIn: 3600
+                  userInfo:
+                    id: 1
+                    username: zhangsan
+                    nickname: 张三
+                timestamp: 1704067200
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  # ==================== 射箭分析相关接口 ====================
+  /archery/stats:
+    get:
+      tags:
+        - 射箭分析
+      summary: 获取射箭分析统计数据
+      description: |
+        获取用户最近的射箭分析统计数据，用于首页展示。
+
+        ## 使用示例
+
+        ```typescript
+        import { getArcheryStats } from '@/core/api/archery'
+
+        const stats = await getArcheryStats()
+        ```
+      operationId: getArcheryStats
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: 获取成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+                properties:
+                  data:
+                    $ref: '#/components/schemas/ArcheryStats'
+              example:
+                code: 200
+                message: 获取成功
+                data:
+                  stability: 85
+                  deviation: 2.5
+                  analysisCount: 10
+                  stabilityScore: 85
+                  averageDeviation: 2.5
+                  lastAnalysisTime: 2024-01-01T12:00:00Z
+                timestamp: 1704067200
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /archery/upload:
+    post:
+      tags:
+        - 射箭分析
+      summary: 上传射箭视频
+      description: |
+        上传射箭视频文件，系统将进行自动分析并返回任务ID。
+
+        ## 使用示例
+
+        ```typescript
+        import { uploadArcheryVideo } from '@/core/api/archery'
+
+        const formData = new FormData()
+        formData.append('archerVideo', archerFile)
+        formData.append('targetVideo', targetFile)
+        formData.append('note', '测试视频')
+
+        const result = await uploadArcheryVideo(formData)
+        ```
+      operationId: uploadArcheryVideo
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - archerVideo
+                - targetVideo
+              properties:
+                archerVideo:
+                  type: string
+                  format: binary
+                  description: 射箭人视频文件（支持格式：mp4、avi、mov、mkv，最大512MB）
+                targetVideo:
+                  type: string
+                  format: binary
+                  description: 箭靶视频文件（支持格式：mp4、avi、mov、mkv，最大512MB）
+                note:
+                  type: string
+                  description: 备注（可选）
+                  example: 测试视频
+      responses:
+        '200':
+          description: 上传成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+                properties:
+                  data:
+                    $ref: '#/components/schemas/UploadArcheryVideoResponse'
+              example:
+                code: 200
+                message: 上传成功
+                data:
+                  taskId: task-1234567890
+                timestamp: 1704067200
+        '400':
+          description: 文件格式不支持或文件过大
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                code: 400
+                message: 文件格式不支持，仅支持MP4格式
+                data: null
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '413':
+          description: 文件过大
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                code: 413
+                message: 文件大小超过限制（最大512MB）
+                data: null
+
+  /archery/detail/{taskId}:
+    get:
+      tags:
+        - 射箭分析
+      summary: 获取射箭分析详情
+      description: |
+        根据任务ID获取射箭分析的详细数据，包括命中点、轨迹等。
+
+        ## 使用示例
+
+        ```typescript
+        import { getArcheryDetail } from '@/core/api/archery'
+
+        const detail = await getArcheryDetail('task-1234567890')
+        ```
+      operationId: getArcheryDetail
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: taskId
+          in: path
+          required: true
+          description: 分析任务ID
+          schema:
+            type: string
+          example: task-1234567890
+      responses:
+        '200':
+          description: 获取成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+                properties:
+                  data:
+                    $ref: '#/components/schemas/ArcheryDetail'
+              example:
+                code: 200
+                message: 获取成功
+                data:
+                  taskId: task-1234567890
+                  hitPoints:
+                    - x: 10.5
+                      y: 12.3
+                      ring: 8
+                      timestamp: 1704067200000
+                    - x: 11.2
+                      y: 11.8
+                      ring: 9
+                      timestamp: 1704067300000
+                  trajectory:
+                    - x: 0
+                      y: 0
+                      time: 0
+                    - x: 5.2
+                      y: 3.1
+                      time: 0.1
+                    - x: 10.5
+                      y: 12.3
+                      time: 0.2
+                timestamp: 1704067200
+        '404':
+          description: 任务不存在
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                code: 404
+                message: 任务不存在
+                data: null
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  # ==================== 视频上传相关接口 ====================
+  /video/upload:
+    post:
+      tags:
+        - 视频上传
+      summary: 分片上传视频文件
+      description: |
+        上传视频文件的分片。支持分片上传和断点续传。
+
+        ## 使用示例
+
+        ```typescript
+        import { uploadVideoChunk } from '@/modules/video/upload/api/uploadApi'
+
+        const result = await uploadVideoChunk({
+          videoId: 'video_123',
+          file: chunkBlob,
+          chunkIndex: 0,
+          totalChunks: 10,
+          totalSize: 104857600,
+          fileName: 'video.mp4',
+          fileType: 'video/mp4'
+        })
+        ```
+      operationId: uploadVideoChunk
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - file
+                - videoId
+                - chunkIndex
+                - totalChunks
+                - totalSize
+                - fileName
+                - fileType
+              properties:
+                file:
+                  type: string
+                  format: binary
+                  description: 视频文件分片
+                videoId:
+                  type: string
+                  description: 视频ID
+                  example: 'video_123456'
+                chunkIndex:
+                  type: integer
+                  description: 当前分片索引（从0开始）
+                  example: 0
+                totalChunks:
+                  type: integer
+                  description: 总分片数
+                  example: 10
+                totalSize:
+                  type: integer
+                  description: 文件总大小（字节）
+                  example: 104857600
+                fileName:
+                  type: string
+                  description: 文件名
+                  example: 'video.mp4'
+                fileType:
+                  type: string
+                  description: 文件MIME类型
+                  example: 'video/mp4'
+      responses:
+        '200':
+          description: 上传成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+                properties:
+                  data:
+                    $ref: '#/components/schemas/ChunkUploadResponse'
+              example:
+                code: 200
+                message: 上传成功
+                data:
+                  chunkIndex: 0
+                  uploaded: true
+                  videoId: 'video_123456'
+                timestamp: 1704067200
+        '400':
+          description: 请求参数错误
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                code: 400
+                message: 请求参数错误
+                data: null
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '413':
+          description: 文件过大
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                code: 413
+                message: 文件大小超过限制（最大512MB）
+                data: null
+
+  /video/validate:
+    post:
+      tags:
+        - 视频上传
+      summary: 校验视频文件
+      description: |
+        校验视频文件的格式、大小等信息。
+
+        ## 使用示例
+
+        ```typescript
+        import { validateVideo } from '@/modules/video/upload/api/uploadApi'
+
+        const result = await validateVideo({
+          fileName: 'video.mp4',
+          fileSize: 104857600,
+          fileType: 'video/mp4'
+        })
+        ```
+      operationId: validateVideo
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ValidateVideoRequest'
+            example:
+              fileName: video.mp4
+              fileSize: 104857600
+              fileType: video/mp4
+      responses:
+        '200':
+          description: 校验结果
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+                properties:
+                  data:
+                    $ref: '#/components/schemas/ValidateVideoResponse'
+              example:
+                code: 200
+                message: 校验通过
+                data:
+                  valid: true
+                  message: '文件格式正确'
+                timestamp: 1704067200
+        '400':
+          description: 请求参数错误
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                code: 400
+                message: 请求参数错误
+                data: null
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /video/saveType:
+    post:
+      tags:
+        - 视频上传
+      summary: 保存视频类型
+      description: |
+        保存视频的分析类型（运动人体视频/射箭视频）。
+
+        ## 使用示例
+
+        ```typescript
+        import { saveVideoType } from '@/modules/video/upload/api/uploadApi'
+        import { VideoType } from '@/modules/video/upload/types/uploadTypes'
+
+        const result = await saveVideoType({
+          videoId: 'video_123',
+          videoType: VideoType.HUMAN
+        })
+        ```
+      operationId: saveVideoType
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SaveVideoTypeRequest'
+            example:
+              videoId: video_123456
+              videoType: human
+      responses:
+        '200':
+          description: 保存成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+                properties:
+                  data:
+                    $ref: '#/components/schemas/SaveVideoTypeResponse'
+              example:
+                code: 200
+                message: 保存成功
+                data:
+                  success: true
+                timestamp: 1704067200
+        '400':
+          description: 请求参数错误
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                code: 400
+                message: 请求参数错误
+                data: null
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT Token认证
+
+  schemas:
+    # ==================== 通用响应模型 ====================
+    ApiResponse:
+      type: object
+      required:
+        - code
+        - message
+        - data
+      properties:
+        code:
+          type: integer
+          description: 业务状态码，200表示成功
+          example: 200
+        message:
+          type: string
+          description: 响应消息
+          example: Success
+        data:
+          description: 响应数据
+        timestamp:
+          type: integer
+          description: 时间戳（可选）
+          example: 1704067200
+
+    # ==================== 错误响应模型 ====================
+    ErrorResponse:
+      type: object
+      required:
+        - code
+        - message
+      properties:
+        code:
+          type: integer
+          description: 错误码
+          example: 400
+        message:
+          type: string
+          description: 错误消息
+          example: 请求参数错误
+        data:
+          type: object
+          nullable: true
+          description: 错误详情（可选）
+
+    # ==================== 用户管理相关模型 ====================
+    UserInfo:
+      type: object
+      required:
+        - id
+        - username
+      properties:
+        id:
+          type: integer
+          description: 用户ID
+          example: 1
+        username:
+          type: string
+          description: 用户名
+          example: zhangsan
+        nickname:
+          type: string
+          description: 昵称
+          example: 张三
+        email:
+          type: string
+          format: email
+          description: 邮箱
+          example: zhangsan@example.com
+        phone:
+          type: string
+          description: 手机号
+          pattern: '^1[3-9]\d{9}$'
+          example: 13800138000
+        avatar:
+          type: string
+          format: uri
+          description: 头像URL
+          example: https://example.com/avatar.jpg
+        roles:
+          type: array
+          items:
+            type: string
+            enum: [admin, user, guest]
+          description: 用户角色列表
+          example: [user]
+        gender:
+          type: string
+          description: 性别
+          enum: [男, 女, 保密]
+          example: 男
+        userAge:
+          type: integer
+          description: 用户年龄
+          minimum: 1
+          maximum: 150
+          example: 25
+        createdAt:
+          type: string
+          format: date-time
+          description: 创建时间
+          example: 2024-01-01T00:00:00Z
+        updatedAt:
+          type: string
+          format: date-time
+          description: 更新时间
+          example: 2024-01-01T00:00:00Z
+
+    LoginRequest:
+      type: object
+      required:
+        - username
+        - password
+      properties:
+        username:
+          type: string
+          description: 用户名或邮箱
+          example: zhangsan
+        password:
+          type: string
+          description: 密码
+          format: password
+          example: password123
+        captcha:
+          type: string
+          description: 验证码（可选）
+          example: 1234
+
+    LoginResponse:
+      type: object
+      required:
+        - accessToken
+        - userInfo
+      properties:
+        accessToken:
+          type: string
+          description: 访问令牌
+          example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+        refreshToken:
+          type: string
+          description: 刷新令牌（可选）
+          example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+        expiresIn:
+          type: integer
+          description: 令牌过期时间（秒）
+          example: 3600
+        userInfo:
+          $ref: '#/components/schemas/UserInfo'
+
+    RegisterRequest:
+      type: object
+      required:
+        - nickname
+        - username
+        - password
+      properties:
+        nickname:
+          type: string
+          description: 昵称
+          minLength: 2
+          maxLength: 10
+          example: 张三
+        username:
+          type: string
+          description: 用户名
+          minLength: 3
+          maxLength: 20
+          pattern: '^[a-zA-Z0-9_]+$'
+          example: zhangsan
+        password:
+          type: string
+          description: 密码（至少6位）
+          format: password
+          minLength: 6
+          example: password123
+        email:
+          type: string
+          format: email
+          description: 邮箱（可选）
+          example: zhangsan@example.com
+        phone:
+          type: string
+          description: 手机号（可选）
+          pattern: '^1[3-9]\d{9}$'
+          example: 13800138000
+
+    RegisterResponse:
+      type: object
+      required:
+        - accessToken
+        - userInfo
+      properties:
+        accessToken:
+          type: string
+          description: 访问令牌
+          example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+        refreshToken:
+          type: string
+          description: 刷新令牌（可选）
+          example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+        expiresIn:
+          type: integer
+          description: 令牌过期时间（秒）
+          example: 3600
+        userInfo:
+          $ref: '#/components/schemas/UserInfo'
+
+    # ==================== 射箭分析相关模型 ====================
+    ArcheryStats:
+      type: object
+      required:
+        - stability
+        - deviation
+        - analysisCount
+      properties:
+        stability:
+          type: number
+          description: 平均撒放稳定性（分，0-100）
+          minimum: 0
+          maximum: 100
+          example: 85
+        deviation:
+          type: number
+          description: 箭道偏差值（cm）
+          minimum: 0
+          example: 2.5
+        analysisCount:
+          type: integer
+          description: 有效分析次数
+          minimum: 0
+          example: 10
+        stabilityScore:
+          type: number
+          description: 稳定性评分（兼容字段，0-100）
+          minimum: 0
+          maximum: 100
+          example: 85
+        averageDeviation:
+          type: number
+          description: 平均偏差值（兼容字段，cm）
+          minimum: 0
+          example: 2.5
+        lastAnalysisTime:
+          type: string
+          format: date-time
+          description: 最近分析时间（兼容字段）
+          example: 2024-01-01T12:00:00Z
+
+    HitPoint:
+      type: object
+      required:
+        - x
+        - y
+        - ring
+        - timestamp
+      properties:
+        x:
+          type: number
+          description: X坐标
+          example: 10.5
+        y:
+          type: number
+          description: Y坐标
+          example: 12.3
+        ring:
+          type: integer
+          description: 环数（1-10）
+          minimum: 1
+          maximum: 10
+          example: 8
+        timestamp:
+          type: integer
+          description: 时间戳（毫秒）
+          example: 1704067200000
+
+    TrajectoryPoint:
+      type: object
+      required:
+        - x
+        - y
+        - time
+      properties:
+        x:
+          type: number
+          description: X坐标
+          example: 0
+        y:
+          type: number
+          description: Y坐标
+          example: 0
+        time:
+          type: number
+          description: 时间（秒）
+          minimum: 0
+          example: 0
+
+    ArcheryDetail:
+      type: object
+      required:
+        - taskId
+        - hitPoints
+        - trajectory
+      properties:
+        taskId:
+          type: string
+          description: 任务ID
+          example: task-1234567890
+        hitPoints:
+          type: array
+          items:
+            $ref: '#/components/schemas/HitPoint'
+          description: 命中点列表
+        trajectory:
+          type: array
+          items:
+            $ref: '#/components/schemas/TrajectoryPoint'
+          description: 撒放轨迹
+
+    UploadArcheryVideoResponse:
+      type: object
+      required:
+        - taskId
+      properties:
+        taskId:
+          type: string
+          description: 分析任务ID
+          example: task-1234567890
+
+    # ==================== 视频上传相关模型 ====================
+    ChunkUploadResponse:
+      type: object
+      required:
+        - chunkIndex
+        - uploaded
+        - videoId
+      properties:
+        chunkIndex:
+          type: integer
+          description: 已上传的分片索引
+          example: 0
+        uploaded:
+          type: boolean
+          description: 是否上传成功
+          example: true
+        videoId:
+          type: string
+          description: 视频ID
+          example: 'video_123456'
+
+    ValidateVideoRequest:
+      type: object
+      required:
+        - fileName
+        - fileSize
+        - fileType
+      properties:
+        fileName:
+          type: string
+          description: 文件名
+          example: 'video.mp4'
+        fileSize:
+          type: integer
+          description: 文件大小（字节）
+          example: 104857600
+        fileType:
+          type: string
+          description: 文件MIME类型
+          example: 'video/mp4'
+
+    ValidateVideoResponse:
+      type: object
+      required:
+        - valid
+        - message
+      properties:
+        valid:
+          type: boolean
+          description: 是否校验通过
+          example: true
+        message:
+          type: string
+          description: 校验消息
+          example: '文件格式正确'
+
+    SaveVideoTypeRequest:
+      type: object
+      required:
+        - videoId
+        - videoType
+      properties:
+        videoId:
+          type: string
+          description: 视频ID
+          example: 'video_123456'
+        videoType:
+          type: string
+          enum:
+            - human
+            - archery
+          description: 视频类型，human表示运动人体视频，archery表示射箭视频
+          example: 'human'
+
+    SaveVideoTypeResponse:
+      type: object
+      required:
+        - success
+      properties:
+        success:
+          type: boolean
+          description: 是否保存成功
+          example: true
+
+  responses:
+    # ==================== 标准错误响应模型 ====================
+    BadRequest:
+      description: 请求参数错误
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            code: 400
+            message: 请求参数错误
+            data: null
+
+    Unauthorized:
+      description: 未授权，需要登录
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            code: 401
+            message: 未授权，请先登录
+            data: null
+
+    Forbidden:
+      description: 无权限访问
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            code: 403
+            message: 无权限访问
+            data: null
+
+    NotFound:
+      description: 资源不存在
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            code: 404
+            message: 资源不存在
+            data: null
+
+    InternalServerError:
+      description: 服务器内部错误
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            code: 500
+            message: 服务器内部错误
+            data: null

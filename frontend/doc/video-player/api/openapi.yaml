@@ -1,0 +1,333 @@
+openapi: 3.0.3
+info:
+  title: 视频播放模块 API 文档
+  description: |
+    视频播放模块提供视频信息获取、帧数据获取、关键帧获取等功能。
+    
+    ## 认证方式
+    
+    所有API请求都需要在请求头中携带Bearer Token：
+    
+    ```
+    Authorization: Bearer <token>
+    ```
+  version: 1.0.0
+  contact:
+    name: 开发团队
+    email: dev@example.com
+
+servers:
+  - url: /api
+    description: API基础路径
+
+tags:
+  - name: 视频信息
+    description: 视频信息相关接口
+  - name: 分析数据
+    description: 分析数据相关接口
+
+paths:
+  /video/info:
+    get:
+      tags:
+        - 视频信息
+      summary: 获取视频信息
+      description: |
+        根据视频ID获取视频的详细信息。
+        
+        ## 使用示例
+        
+        ```typescript
+        import { get } from '@/core/api'
+        
+        const videoInfo = await get<VideoInfo>('/video/info', {
+          videoId: 'video_123456'
+        })
+        ```
+      operationId: getVideoInfo
+      parameters:
+        - name: videoId
+          in: query
+          required: true
+          description: 视频ID
+          schema:
+            type: string
+            example: "video_123456"
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: 获取成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VideoInfoResponse'
+        '400':
+          description: 请求参数错误
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          description: 视频不存在
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        '500':
+          $ref: '#/components/responses/ServerError'
+  
+  /analysis/frameData:
+    get:
+      tags:
+        - 分析数据
+      summary: 获取帧数据
+      description: |
+        根据视频ID获取分析后的帧数据。
+        
+        ## 使用示例
+        
+        ```typescript
+        import { get } from '@/core/api'
+        
+        const frameData = await get<FrameDataResponse>('/analysis/frameData', {
+          videoId: 'video_123456'
+        })
+        ```
+      operationId: getFrameData
+      parameters:
+        - name: videoId
+          in: query
+          required: true
+          description: 视频ID
+          schema:
+            type: string
+            example: "video_123456"
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: 获取成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FrameDataResponse'
+        '400':
+          description: 请求参数错误
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/ServerError'
+  
+  /analysis/keyFrames:
+    get:
+      tags:
+        - 分析数据
+      summary: 获取关键帧
+      description: |
+        根据视频ID获取关键帧列表。
+        
+        ## 使用示例
+        
+        ```typescript
+        import { get } from '@/core/api'
+        
+        const keyFrames = await get<KeyFramesResponse>('/analysis/keyFrames', {
+          videoId: 'video_123456'
+        })
+        ```
+      operationId: getKeyFrames
+      parameters:
+        - name: videoId
+          in: query
+          required: true
+          description: 视频ID
+          schema:
+            type: string
+            example: "video_123456"
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: 获取成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/KeyFramesResponse'
+        '400':
+          description: 请求参数错误
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Bearer Token认证
+  
+  schemas:
+    VideoInfo:
+      type: object
+      description: 视频信息
+      properties:
+        id:
+          type: string
+          description: 视频ID
+          example: "video_123456"
+        name:
+          type: string
+          description: 视频名称
+          example: "test_video.mp4"
+        url:
+          type: string
+          description: 视频URL
+          example: "https://example.com/videos/video_123456.mp4"
+        duration:
+          type: number
+          description: 视频时长（秒）
+          example: 120.5
+        width:
+          type: integer
+          description: 视频宽度（像素）
+          example: 1920
+        height:
+          type: integer
+          description: 视频高度（像素）
+          example: 1080
+        fileSize:
+          type: integer
+          description: 文件大小（字节）
+          example: 104857600
+        createdAt:
+          type: string
+          format: date-time
+          description: 创建时间
+          example: "2026-01-07T10:00:00Z"
+    
+    VideoInfoResponse:
+      type: object
+      description: 视频信息响应
+      properties:
+        code:
+          type: integer
+          example: 200
+        message:
+          type: string
+          example: "Success"
+        data:
+          $ref: '#/components/schemas/VideoInfo'
+    
+    FrameData:
+      type: object
+      description: 帧数据
+      properties:
+        frameIndex:
+          type: integer
+          description: 帧索引
+          example: 0
+        timestamp:
+          type: number
+          description: 时间戳（秒）
+          example: 0.0
+        data:
+          type: object
+          description: 帧数据内容
+          additionalProperties: true
+    
+    FrameDataResponse:
+      type: object
+      description: 帧数据响应
+      properties:
+        code:
+          type: integer
+          example: 200
+        message:
+          type: string
+          example: "Success"
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/FrameData'
+    
+    KeyFrame:
+      type: object
+      description: 关键帧
+      properties:
+        frameIndex:
+          type: integer
+          description: 帧索引
+          example: 100
+        timestamp:
+          type: number
+          description: 时间戳（秒）
+          example: 3.33
+        description:
+          type: string
+          description: 关键帧描述
+          example: "关键动作"
+    
+    KeyFramesResponse:
+      type: object
+      description: 关键帧响应
+      properties:
+        code:
+          type: integer
+          example: 200
+        message:
+          type: string
+          example: "Success"
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/KeyFrame'
+    
+    ApiError:
+      type: object
+      description: API错误响应
+      required:
+        - code
+        - message
+      properties:
+        code:
+          type: integer
+          description: 错误码
+          example: 400
+        message:
+          type: string
+          description: 错误消息
+          example: Bad Request
+  
+  responses:
+    Unauthorized:
+      description: 未授权，Token无效或已过期
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiError'
+          example:
+            code: 401
+            message: 登录已过期，请重新登录
+    
+    ServerError:
+      description: 服务器内部错误
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiError'
+          example:
+            code: 500
+            message: 服务器内部错误
