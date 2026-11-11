@@ -57,28 +57,26 @@
 
 ## 技术栈
 
-| 层 | 用到的 |
-| --- | --- |
+| 层   | 用到的                                                                            |
+| ---- | --------------------------------------------------------------------------------- |
 | 前端 | Vue 3.5、TypeScript 5.9、Vite 7、Element Plus、Pinia、Vue Router、ECharts、Fabric |
-| 后端 | FastAPI、Uvicorn、Ultralytics YOLO、OpenCV、NumPy |
-| 工具 | pnpm、Playwright、Vitest、vue-tsc |
+| 后端 | FastAPI、Uvicorn、Ultralytics YOLO、OpenCV、NumPy                                 |
+| 工具 | pnpm、Playwright、Vitest、vue-tsc                                                 |
 
 ## 快速开始
 
 ### 环境要求
 
-| 项目 | 版本 |
-| --- | --- |
-| Node.js | `^20.19.0` 或 `>=22.12.0` |
-| pnpm | 10.x |
-| Python | 3.9 ~ 3.12（torch 对 3.13 支持尚不完整） |
+| 项目    | 版本                                     |
+| ------- | ---------------------------------------- |
+| Node.js | `^20.19.0` 或 `>=22.12.0`            |
+| pnpm    | 10.x                                     |
+| Python  | 3.9 ~ 3.12（torch 对 3.13 支持尚不完整） |
 
 ### 安装
 
 ```bash
 # 后端依赖（建议用独立 conda / venv 环境）
-conda activate jisuanji_shijue      # 或自建环境
-
 # 方式 A：兼容区间（首次安装，允许日后小幅升级）
 pip install -i https://mirrors.aliyun.com/pypi/simple/ -r backend/requirements.txt
 
@@ -93,9 +91,9 @@ cd frontend && pnpm install && cd ..
 
 两个依赖文件二选一即可：
 
-| 文件 | 内容 | 适用场景 |
-| --- | --- | --- |
-| `requirements.txt` | 6 个顶层依赖的兼容区间 | 正常安装，允许依赖小幅升级 |
+| 文件                      | 内容                            | 适用场景                                 |
+| ------------------------- | ------------------------------- | ---------------------------------------- |
+| `requirements.txt`      | 6 个顶层依赖的兼容区间          | 正常安装，允许依赖小幅升级               |
 | `requirements.lock.txt` | 55 项精确版本（含全部传递依赖） | 版本完全复现，排查"我这里能跑他那里不行" |
 
 `requirements.lock.txt` 在 Python 3.9.25 + Windows AMD64 + torch 2.8.0+cpu 下导出，并已用 `pip install --dry-run` 与 `pip check` 验证无冲突。它已剔除与本项目无关的包。若在 Linux 上只用 CPU，先单独装 `torch==2.8.0 torchvision==0.23.0`（`--index-url https://download.pytorch.org/whl/cpu`），否则会拉取数 GB 的 CUDA 运行时。
@@ -119,9 +117,9 @@ python dev.py --check
 
 启动后访问：
 
-- 识别页面 <http://localhost:4000/ai-analysis>
-- 接口文档 <http://127.0.0.1:8000/docs>
-- 健康检查 <http://127.0.0.1:8000/health>
+- 识别页面 [http://localhost:4000/ai-analysis](http://localhost:4000/ai-analysis)
+- 接口文档 [http://127.0.0.1:8000/docs](http://127.0.0.1:8000/docs)
+- 健康检查 [http://127.0.0.1:8000/health](http://127.0.0.1:8000/health)
 
 也可以分别手动启动：
 
@@ -132,19 +130,19 @@ cd frontend && pnpm dev
 
 ## 接口
 
-| 方法 | 路径 | 说明 |
-| --- | --- | --- |
-| GET | `/` | 服务信息与接口清单 |
-| GET | `/health` | 权重与模型加载状态 |
-| POST | `/upload/arrow/tracked` | 箭头计数，返回中箭总数与逐箭明细 |
-| POST | `/upload/arrow` | 箭头检测，只标注不计数 |
-| POST | `/upload/pose` | 姿态识别，输出带骨骼的视频 |
-| GET | `/media/{filename}` | 内联播放（前端 `<video>` 使用） |
-| GET | `/download/{filename}` | 下载标注视频 |
+| 方法 | 路径                      | 说明                              |
+| ---- | ------------------------- | --------------------------------- |
+| GET  | `/`                     | 服务信息与接口清单                |
+| GET  | `/health`               | 权重与模型加载状态                |
+| POST | `/upload/arrow/tracked` | 箭头计数，返回中箭总数与逐箭明细  |
+| POST | `/upload/arrow`         | 箭头检测，只标注不计数            |
+| POST | `/upload/pose`          | 姿态识别，输出带骨骼的视频        |
+| GET  | `/media/{filename}`     | 内联播放（前端 `<video>` 使用） |
+| GET  | `/download/{filename}`  | 下载标注视频                      |
 
 前端统一前缀 `/ai-api`，例如 `POST /ai-api/upload/arrow/tracked` 会被转发到 `POST http://127.0.0.1:8000/upload/arrow/tracked`。
 
-接口细节以 <http://127.0.0.1:8000/docs> 的 OpenAPI 文档为准。
+接口细节以 [http://127.0.0.1:8000/docs](http://127.0.0.1:8000/docs) 的 OpenAPI 文档为准。
 
 ### 响应体体积
 
@@ -154,11 +152,11 @@ cd frontend && pnpm dev
 
 前端配置见 `frontend/.env.example`，复制为 `.env.local` 后按需修改：
 
-| 变量 | 默认 | 说明 |
-| --- | --- | --- |
-| `VITE_AI_BACKEND_BASE` | `/ai-api` | 浏览器侧请求前缀 |
-| `VITE_AI_BACKEND_URL` | `http://127.0.0.1:8000` | 后端真实地址（仅 Vite 代理使用，不会进浏览器） |
-| `VITE_ENABLE_MOCK` | `true` | 原有 Mock 链路开关，与识别服务无关 |
+| 变量                     | 默认                      | 说明                                           |
+| ------------------------ | ------------------------- | ---------------------------------------------- |
+| `VITE_AI_BACKEND_BASE` | `/ai-api`               | 浏览器侧请求前缀                               |
+| `VITE_AI_BACKEND_URL`  | `http://127.0.0.1:8000` | 后端真实地址（仅 Vite 代理使用，不会进浏览器） |
+| `VITE_ENABLE_MOCK`     | `true`                  | 原有 Mock 链路开关，与识别服务无关             |
 
 后端端口可通过环境变量 `AI_BACKEND_PORT` 调整，前端端口用 `FRONTEND_PORT`。
 
