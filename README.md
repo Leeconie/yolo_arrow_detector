@@ -105,7 +105,7 @@ cd frontend && pnpm install && cd ..
 python dev.py
 
 # 指定后端解释器（不激活环境时）
-python dev.py --python "<conda根目录>\envs\jisuanji_shijue\python.exe"
+python dev.py --python "<conda根目录>\envs\环境名\python.exe"
 
 # 只启后端 / 只启前端 / 只做自检
 python dev.py --backend
